@@ -12,6 +12,7 @@ import { withdrawAllReward } from '@services/m-token';
 const wallet: NextPage = function () {
 	const nearRPCContext = useNearRPCContext();
 
+	// Define the near RPC Provider from Context API to window global DOM Variables. This make able to cross use yours functions call.
 	const defineWindowProperties = async (): Promise<void> => {
 		try {
 			Object.defineProperty(window, 'nearRPC', { value: nearRPCContext, writable: true });
