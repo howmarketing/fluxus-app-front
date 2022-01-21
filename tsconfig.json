@@ -1,0 +1,114 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+	"module": "esnext",
+    "moduleResolution": "node",
+    "lib": [
+      "webworker",
+      "dom",
+      "dom.iterable",
+      "es2017"
+    ],
+    "baseUrl": ".",
+    "rootDirs": [
+      "./",
+      "**/*"
+    ], /* Allow multiple folders to be treated as one when resolving modules. */
+    "paths": {
+      "@workers/*": [
+        "./workers/*"
+      ],
+      "@assets/*": [
+        "./assets/*"
+      ],
+      "@consts/*": [
+        "./consts/*"
+      ],
+      "@components/*": [
+        "./components/*"
+      ],
+      "@icon/*": [
+        "./components/icon"
+      ],
+      "@contexts/*": [
+        "./contexts/*"
+      ],
+      "@hooks/*": [
+        "./hooks/*"
+      ],
+      "@utils/*": [
+        "./utils/*"
+      ],
+      "@services/*": [
+        "./services/*"
+      ],
+      "@creators/*": [
+        "./services/creators/*"
+      ],
+      "@state/*": [
+        "./state/*"
+      ],
+      "@store/*": [
+        "./store/*"
+      ],
+      "@pages/*": [
+        "./pages/*"
+      ],
+      "@public/*": [
+        "./public/*"
+      ],
+      "@styles/*": [
+        "./styles/*"
+      ],
+      "@theme/*": [
+        "./styles/theme/*"
+      ],
+      // "@database/*": ["./database/*"],
+      // "@controllers/*": ["./controllers/*"],
+      // "@models/*": ["./models/*"],
+      "@views/*": [
+        "./pages/*"
+      ]
+    } /* Specify a set of entries that re-map imports to additional lookup locations. */,
+    "typeRoots": [
+      "./node_modules/@types",
+      "./@types"
+    ] /* Specify multiple folders that act like `./node_modules/@types`. */,
+    "outDir": "./next",
+    "allowJs": true,
+	"alwaysStrict":true,
+    "skipLibCheck": true,
+    "strict": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    // "noUnusedLocals": true,
+    // "noUnusedParameters": true,
+    "noEmit": true,
+    "noImplicitAny": true,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "downlevelIteration": true
+  },
+  "files": [
+    "styles/styled.d.ts"
+  ],
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.json",
+    "**/*.js",
+    "next-env.d.ts",
+    "additional.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

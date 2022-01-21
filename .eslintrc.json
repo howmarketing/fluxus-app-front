@@ -1,0 +1,52 @@
+{
+    "env": {
+        "browser": true,
+        "es2021": true,
+        "node": true,
+		"jest": true
+    },
+    "extends": [
+		"plugin:@next/next/recommended",
+        "plugin:react/recommended",
+        "airbnb",
+		"prettier"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "ecmaFeatures": {
+            "jsx": true
+        },
+        "ecmaVersion": 12,
+        "sourceType": "module"
+    },
+    "plugins": [
+        "react",
+        "@typescript-eslint",
+		"prettier"
+    ],
+    "rules": {
+		"prettier/prettier": "error",
+		"react/prop-types": "off",
+		"space-before-function-paren": "off",
+		"vars-on-top":"off",
+		"func-names":"off",
+		"no-unused-vars":"off",
+		"import/extensions":"off",
+		"import/no-unresolved":"off",
+		"no-use-before-define":"off",
+		"react/jsx-filename-extension":"off",
+		"no-param-reassign":"off",
+		"import/prefer-default-export":"off",
+		"no-console":"off",
+		"camelcase":"off",
+		"no-shadow":"off",
+		"no-nested-ternary":"off",
+		"no-plusplus":"off",
+		"react/require-default-props":"off",
+		"react/function-component-definition":"off",
+		"react/no-unstable-nested-components":"off",
+		"react/jsx-props-no-spreading":"off",
+		"react/jsx-no-useless-fragment":"off",
+		"no-underscore-dangle":"off"
+    }
+}
