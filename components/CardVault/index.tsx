@@ -16,7 +16,7 @@ import {
 import { IDarkModeContext } from '@contexts/darkMode';
 import { useDarkMode, useNearRPCContext } from '@hooks/index';
 import { toNonDivisibleNumber, toReadableNumber } from '@utils/numbers';
-import { ICallbackData, nearWalletAsWindow } from '@utils/nearWalletAsWindow';
+import { ICallbackData, IWalletAsWindow, nearWalletAsWindow } from '@utils/nearWalletAsWindow';
 import { getMftTokenId } from '@utils/token';
 import { IFarmData as IVaultData } from '@workers/workerNearPresets';
 import { unstake } from '@services/m-token';
@@ -1535,13 +1535,14 @@ const ModalStakeFooter = (props: {
 	};
 
 	const getProviderFromWindowWallet = async (msTime?: number | undefined) => {
-		const wallet = {} as {windowProvider: typeof nearWalletAsWindow};
+		type IProviderFromWindowWalletResponse = { windowProvider: IWalletAsWindow };
+		const wallet = { windowProvider: {} } as IProviderFromWindowWalletResponse;
 		Object.defineProperty(wallet, 'windowProvider', { value: nearWalletAsWindow, writable: true });
 		const walletProvider = wallet.windowProvider;
 
 		walletProvider._makeItWaitBeforeClose = msTime && msTime >= 500 ? msTime : 500;
 		const windowWalletProvider = await walletProvider.getWindowWalletRPC<ProviderPattern>(true);
-		return {provider: windowWalletProvider.getProvider(), wallet: walletProvider};
+		return { provider: windowWalletProvider.getProvider(), wallet: walletProvider };
 	};
 
 	const depositNearToVault = async (
@@ -1559,7 +1560,7 @@ const ModalStakeFooter = (props: {
 				totalExecutionTime: 0,
 			};
 		}
-		const {provider, wallet} = await getProviderFromWindowWallet(1500);
+		const { provider, wallet } = await getProviderFromWindowWallet(1500);
 		provider.getProviderActions().getVaultActions().storageDeposit(`${depositAmount}`);
 		const walletResponse = await wallet.getWalletCallback();
 		return { toast: { Icon: WarningIcon, title: 'Did not received amount for deposit action' }, ...walletResponse };
@@ -1585,7 +1586,7 @@ const ModalStakeFooter = (props: {
 			totalExecutionTime: 0,
 		};
 		try {
-			const {provider, wallet} = await getProviderFromWindowWallet(2500);
+			const { provider, wallet } = await getProviderFromWindowWallet(2500);
 			const vaultActions = provider.getProviderActions().getVaultActions();
 
 			vaultActions.wrapNearBalance();
@@ -1612,7 +1613,7 @@ const ModalStakeFooter = (props: {
 			totalExecutionTime: 0,
 		};
 		try {
-			const {provider, wallet} = await getProviderFromWindowWallet(1500);
+			const { provider, wallet } = await getProviderFromWindowWallet(1500);
 			const vaultActions = provider.getProviderActions().getVaultActions();
 
 			vaultActions.batchTransactionDepositAndWrapNearBalance({ amountToDeposit: `${depositAmount || '0'}` });
@@ -1640,7 +1641,7 @@ const ModalStakeFooter = (props: {
 			finishedTime: 0,
 			totalExecutionTime: 0,
 		};
-		const {provider, wallet} = await getProviderFromWindowWallet(1500);
+		const { provider, wallet } = await getProviderFromWindowWallet(1500);
 		await makeWait(1000);
 		try {
 			const vaultActions = provider.getProviderActions().getVaultActions();
@@ -1651,7 +1652,7 @@ const ModalStakeFooter = (props: {
 		} catch (e: any) {
 			console.error(e);
 			console.log('================================');
-			console.log({provider, wallet});
+			console.log({ provider, wallet });
 			console.log('================================');
 			response.success = false;
 			response.message = e?.message || 'Unknown error when add to vault.';

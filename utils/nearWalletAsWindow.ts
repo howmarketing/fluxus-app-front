@@ -491,3 +491,4 @@ export const nearWalletAsWindow = {
 		});
 	},
 };
+export type IWalletAsWindow = typeof nearWalletAsWindow;
