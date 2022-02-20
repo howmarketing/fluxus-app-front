@@ -1566,7 +1566,7 @@ const ModalStakeFooter = (props: {
 		return { toast: { Icon: WarningIcon, title: 'Did not received amount for deposit action' }, ...walletResponse };
 	};
 
-	const getVaultStorageBalanceOf = async () => {
+	const getVaultStorageBalanceOf = async (): Promise<{ available: string; total: string }> => {
 		const account_id = getWallet().getAccountId();
 		return ProviderPattern.getProviderInstance()
 			.getProviderActions()
@@ -1585,15 +1585,18 @@ const ModalStakeFooter = (props: {
 			finishedTime: 0,
 			totalExecutionTime: 0,
 		};
+		const { provider, wallet } = await getProviderFromWindowWallet(2500);
+		const vaultActions = provider.getProviderActions().getVaultActions();
 		try {
-			const { provider, wallet } = await getProviderFromWindowWallet(2500);
-			const vaultActions = provider.getProviderActions().getVaultActions();
-
 			vaultActions.wrapNearBalance();
 			const walletResponse = await wallet.getWalletCallback();
 			response.data = walletResponse || {};
 			return response;
 		} catch (e: any) {
+			console.log('================================');
+			console.log({ provider, wallet });
+			console.log('================================');
+			console.error(e);
 			response.success = false;
 			response.message = e?.message || 'Unknow error to wrap near';
 			response.toast = { Icon: ErrorIcon, title: 'Unknow error to wrap near' };
@@ -1612,16 +1615,19 @@ const ModalStakeFooter = (props: {
 			finishedTime: 0,
 			totalExecutionTime: 0,
 		};
+		const { provider, wallet } = await getProviderFromWindowWallet(1500);
+		const vaultActions = provider.getProviderActions().getVaultActions();
 		try {
-			const { provider, wallet } = await getProviderFromWindowWallet(1500);
-			const vaultActions = provider.getProviderActions().getVaultActions();
-
 			vaultActions.batchTransactionDepositAndWrapNearBalance({ amountToDeposit: `${depositAmount || '0'}` });
 			const walletResponse = await wallet.getWalletCallback();
-			await makeWait(2000);
+			console.log('Finish batch transaction.');
+			await makeWait(3000);
 			response.data = walletResponse || {};
 			return response;
 		} catch (e: any) {
+			console.log('================================');
+			console.log({ provider, wallet });
+			console.log('================================');
 			console.error(e);
 			response.success = false;
 			response.message = e?.message || 'Unknow error to wrap near';
@@ -1641,18 +1647,37 @@ const ModalStakeFooter = (props: {
 			finishedTime: 0,
 			totalExecutionTime: 0,
 		};
-		const { provider, wallet } = await getProviderFromWindowWallet(1500);
-		await makeWait(1000);
+
+
 		try {
-			const vaultActions = provider.getProviderActions().getVaultActions();
-			await vaultActions.addToVault({ account_id: getWallet().getAccountId() });
-			const walletResponse = await wallet.getWalletCallback();
-			response.data = walletResponse || {};
+			const balance = await getVaultStorageBalanceOf();
+			console.log('addToVault called', { balance });
+			await makeWait(3000);
+			console.log('waitted to start process');
+			if(Number(balance.available) < 0.000000000001){
+				throw new Error(`Vault not finished yet`);
+			}
+			const args = { account_id: getWallet().getAccountId() };
+			// try {
+			// 	const { provider, wallet } = await getProviderFromWindowWallet(1500);
+			// 	const vaultActions = provider.getProviderActions().getVaultActions();
+			// 	await vaultActions.addToVault(args);
+			// 	const walletResponse = await wallet.getWalletCallback();
+			// 	response.data = walletResponse || {};
+			// 	return response;
+			// } catch (e: any) {
+			// 	console.log('Add to vault error from window block');
+			// 	dispatchToastNotify({
+			// 		title: `Step 3/3 (Add to vault) was impediated to work with wallet as window. Trying now as background wallet`,
+			// 		Icon: SuccessIcon,
+			// 	});
+			// }
+			response.data = await ProviderPattern.getProviderInstance()
+				.getProviderActions()
+				.getVaultActions()
+				.addToVault(args);
 			return response;
 		} catch (e: any) {
-			console.log('================================');
-			console.log({ provider, wallet });
-			console.log('================================');
 			console.error(e);
 			response.success = false;
 			response.message = e?.message || 'Unknown error when add to vault.';
@@ -1695,7 +1720,7 @@ const ModalStakeFooter = (props: {
 			return 'Cant process deposit';
 		}
 		// DEBUG - Get Log balance of account in VAULT
-		getLogForUserBalanceFromVault();
+		await getLogForUserBalanceFromVault();
 
 		// UX notifyer
 		dispatchToastNotify({

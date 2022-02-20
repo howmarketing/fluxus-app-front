@@ -2,6 +2,7 @@
 import { INearRPCContext } from '@contexts/nearData/nearRPCData';
 import ProviderPattern from '@services/ProviderPattern';
 import { number } from 'mathjs';
+import { makeWait } from './returns';
 
 export type IWalletWindowReference = Window &
 	typeof globalThis & { nearRPC: INearRPCContext | any; providerPattern: ProviderPattern | any };
@@ -24,16 +25,39 @@ export const nearWalletAsWindow = {
 	_makeItWaitBeforeClose: 2000 as number,
 	debug: true,
 
-	async getWindowWalletRPC<T extends unknown>(returnRPCFromProviderPattern = false): Promise<T> {
+	async getWindowWalletRPC<T extends unknown>(returnRPCFromProviderPattern = false, canRetry = true): Promise<T> {
 		const $this = this;
 		try {
 			const providerKey = `${returnRPCFromProviderPattern ? 'providerPattern' : 'nearRPC'}`;
-			const setupRersponse = await this._setUp();
+			const setupRersponse = await $this._setUp();
 			if (!setupRersponse.success) {
+				if (canRetry) {
+					return nearWalletAsWindow.getWindowWalletRPC<T>(returnRPCFromProviderPattern, false);
+				}
 				throw new Error(setupRersponse.message);
 			}
-			const walletWindowDOM = this._getWalletWindow();
-			$this.walletWindowReference.focus();
+			let walletWindowDOM: IWalletWindowReference;
+			try {
+				walletWindowDOM = $this._getWalletWindow();
+				if (typeof $this.walletWindowReference === 'undefined' || $this.walletWindowReference === null) {
+					if (canRetry) {
+						return nearWalletAsWindow.getWindowWalletRPC<T>(returnRPCFromProviderPattern, false);
+					}
+					throw new Error('walletWindowReference is undefined');
+				}
+				if (typeof walletWindowDOM === 'undefined' || walletWindowDOM === null) {
+					if (canRetry) {
+						return nearWalletAsWindow.getWindowWalletRPC<T>(returnRPCFromProviderPattern, false);
+					}
+					throw new Error('walletWindowDOM is undefined');
+				}
+				walletWindowDOM.focus();
+			} catch (e: any) {
+				if (canRetry) {
+					return nearWalletAsWindow.getWindowWalletRPC<T>(returnRPCFromProviderPattern, false);
+				}
+				throw new Error(`Get wallet window error: ${e?.message || 'unknown error'}`);
+			}
 			const rpcProvider = await new Promise<T | undefined>((resolve, reject) => {
 				const rpcTimeout = setTimeout(() => {
 					resolve(undefined);
@@ -70,7 +94,7 @@ export const nearWalletAsWindow = {
 
 			if (typeof rpcProvider === 'undefined') {
 				try {
-					if (this._verifyIfWalletWindowIsOpen()) {
+					if ($this._verifyIfWalletWindowIsOpen()) {
 						walletWindowDOM.close();
 					}
 				} catch (e: any) {
@@ -78,7 +102,7 @@ export const nearWalletAsWindow = {
 				}
 				throw new Error(`Wallet get timed out while try to get NEAR RPC Provider. `);
 			}
-			this._watchTransactionCallback();
+			$this._watchTransactionCallback();
 			return rpcProvider;
 		} catch (e: any) {
 			throw new Error(`${e?.message || 'Unknown error'}`);
@@ -125,10 +149,11 @@ export const nearWalletAsWindow = {
 	},
 
 	async _setUp() {
+		const $this = this;
 		try {
-			await this._resetProps();
-			await this._defineOpnerWindow();
-			await this._defineWalletWindow();
+			await $this._resetProps();
+			await $this._defineOpnerWindow();
+			await $this._defineWalletWindow();
 			return {
 				success: true,
 				message: `Wallet setted successfully.`,
@@ -186,10 +211,10 @@ export const nearWalletAsWindow = {
 	async _defineWalletWindow() {
 		const $this = this;
 		try {
-			if (!this._verifyIfWalletWindowIsOpen()) {
-				await this._resetProps();
+			if (!$this._verifyIfWalletWindowIsOpen()) {
+				await $this._resetProps();
 				await new Promise<boolean>((resolve, reject) => {
-					setTimeout(() => resolve(true), 500);
+					setTimeout(() => resolve(true), 3500);
 				});
 			}
 			$this.walletWindowReference = $this.opnerWindow.open(
@@ -199,6 +224,7 @@ export const nearWalletAsWindow = {
 					window.screen.availWidth / 2 - 200
 				},top=65,width=400,height=740`,
 			) as Window;
+			await makeWait(2000);
 		} catch (e: any) {
 			throw new Error(
 				`Wallet could not define a window document with the following error message: ${
@@ -467,7 +493,7 @@ export const nearWalletAsWindow = {
 	},
 
 	_getWalletWindow(): IWalletWindowReference {
-		return this?.walletWindowReference?.window as IWalletWindowReference || {};
+		return (this?.walletWindowReference?.window as IWalletWindowReference) || {};
 	},
 
 	_verifyIfWalletWindowIsOpen(): boolean {
