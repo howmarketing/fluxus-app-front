@@ -552,6 +552,7 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 }) => {
 	const themeProvided = useDarkMode();
 	const { populatedSeed, isActive, useFluxusVaultContract } = props;
+	const userHasStake = Number(populatedSeed.vault.user.shares_tvl) > 0;
 	const vaultIsEnabled = () => `${populatedSeed.pool_id}` === `193`;
 
 	// Get provider from window wallet
@@ -873,21 +874,19 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 						<>Farm not enabled to auto-compound yet</>
 					)}
 				</ButtonPrimary>
-				{vaultIsEnabled() &&
-					getWallet().isSignedIn() &&
-					(Number(populatedSeed.vault.user.shares_tvl) > 0)(
-						<ButtonPrimary
-							style={{
-								minWidth: '170px',
-								margin: '30px 0 10px 0',
-								height: '50px',
-							}}
-							onClick={() => {
-								doWithdrawAll();
-							}}>
-							Withdraw All
-						</ButtonPrimary>,
-					)}
+				{vaultIsEnabled() && getWallet().isSignedIn() && (
+					<ButtonPrimary
+						style={{
+							minWidth: '170px',
+							margin: '30px 0 10px 0',
+							height: '50px',
+						}}
+						onClick={() => {
+							doWithdrawAll();
+						}}>
+						Withdraw All
+					</ButtonPrimary>
+				)}
 			</div>
 		</CardBodyTabsContentItem>
 	);
