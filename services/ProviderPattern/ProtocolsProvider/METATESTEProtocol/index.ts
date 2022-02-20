@@ -59,7 +59,7 @@ export default class METATESTEProtocolProvider extends AbstractMainProvider {
 	}
 
 	public getRequestAccountsResponse() {
-		return this.getGivenProvider().request({ method: 'eth_requestAccounts' });
+		return this.getGivenProvider()?.request({ method: 'eth_requestAccounts' });
 	}
 
 	public getEthWallet() {
