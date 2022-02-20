@@ -86,7 +86,7 @@ export const nearWalletAsWindow = {
 	},
 
 	async getWalletCallback($limitCallbackTimeout: number | undefined = 360000) {
-		const $this = this;
+		const $this = this as IWalletAsWindow;
 		$limitCallbackTimeout = $limitCallbackTimeout || 360000;
 		$limitCallbackTimeout = $limitCallbackTimeout < 20000 ? 20000 : $limitCallbackTimeout;
 		$limitCallbackTimeout = $limitCallbackTimeout > 360000 ? 360000 : $limitCallbackTimeout;
@@ -467,7 +467,7 @@ export const nearWalletAsWindow = {
 	},
 
 	_getWalletWindow(): IWalletWindowReference {
-		return this.walletWindowReference.window as IWalletWindowReference;
+		return this?.walletWindowReference?.window as IWalletWindowReference || {};
 	},
 
 	_verifyIfWalletWindowIsOpen(): boolean {

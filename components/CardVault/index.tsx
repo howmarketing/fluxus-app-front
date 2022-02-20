@@ -1650,10 +1650,10 @@ const ModalStakeFooter = (props: {
 			response.data = walletResponse || {};
 			return response;
 		} catch (e: any) {
-			console.error(e);
 			console.log('================================');
 			console.log({ provider, wallet });
 			console.log('================================');
+			console.error(e);
 			response.success = false;
 			response.message = e?.message || 'Unknown error when add to vault.';
 			response.toast = { Icon: ErrorIcon, title: 'Unknown error when add to vault.' };
