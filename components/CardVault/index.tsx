@@ -643,7 +643,7 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 			vaultActions.withdrawAllUserStakedLP<{}>({});
 			const walletResponse = await nearWalletAsWindow.getWalletCallback();
 			response.data = walletResponse || {};
-			makeWait();
+			await makeWait(2000);
 			return response;
 		} catch (e: any) {
 			response.toast.title = 'Wallet was blocked by browser. Please, allow pop-up window and try again.';
