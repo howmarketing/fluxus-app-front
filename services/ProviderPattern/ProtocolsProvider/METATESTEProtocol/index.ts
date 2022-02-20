@@ -28,6 +28,8 @@ export default class METATESTEProtocolProvider extends AbstractMainProvider {
 		return this._classInstanceSingleton;
 	}
 
+
+
 	public connect(connectionConfig?: IMainProviderConfig | undefined) {
 		if (this.providerConnection && !connectionConfig) {
 			return this;

@@ -81,7 +81,7 @@
 		"allowJs": true,
 		"alwaysStrict": true,
 		"skipLibCheck": true,
-		"strict": true,
+		"strict": false,
 		"allowSyntheticDefaultImports": true,
 		"forceConsistentCasingInFileNames": true,
 		"noFallthroughCasesInSwitch": true,

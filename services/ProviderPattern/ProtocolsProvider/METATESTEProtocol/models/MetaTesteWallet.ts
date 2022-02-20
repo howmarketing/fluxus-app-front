@@ -39,10 +39,12 @@ export class MetaTesteWalletAccount extends AbstractMainWalletAccount {
 		if (this._thisProtocolProvider) {
 			return this._thisProtocolProvider as T;
 		}
-		this._thisProtocolProvider =
-			ProviderPattern.getInstance().getProviderInstanceByProtocolName<METATESTEProtocolProvider>(
+
+		const provider =
+			ProviderPattern.getInstance().getProviderInstanceByProtocolName(
 				PROTOCOLS.METATESTE,
-			);
+			) as unknown;
+			this._thisProtocolProvider = provider as METATESTEProtocolProvider;
 		return this._thisProtocolProvider as T;
 	}
 

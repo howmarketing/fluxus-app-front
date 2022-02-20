@@ -211,7 +211,7 @@ export const nearWalletAsWindow = {
 		const startTime = new Date().getTime();
 		let finishedTime = new Date().getTime();
 		let totalExecutionTime = (finishedTime - startTime) / 1000;
-		const $this = this;
+		const $this = this as typeof nearWalletAsWindow;
 		const callback = {
 			finished: false,
 			success: false,
