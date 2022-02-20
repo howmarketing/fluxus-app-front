@@ -637,12 +637,18 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 			totalExecutionTime: 0,
 		};
 		try {
-			response.data = await getVaultActions().withdrawAllUserStakedLP<{}>({});
+			const provider = await getVaultActionsFromProviderAsWindow();
+			const vaultActions = provider.actions;
+			vaultActions.withdrawAllUserStakedLP<{}>({});
+			const walletResponse = await nearWalletAsWindow.getWalletCallback();
+			response.data = walletResponse || {};
+			makeWait();
 			return response;
 		} catch (e: any) {
+			response.toast.title = 'Wallet was blocked by browser. Please, allow pop-up window and try again.';
+			response.message = response.toast.title;
+			response.toast.Icon = ErrorIcon;
 			response.success = false;
-			response.message = e?.message || 'Unknow error to Withdraw LP from vault';
-			response.toast = { Icon: ErrorIcon, title: 'Unknow error to Withdraw LP from vault' };
 			return response;
 		}
 	};
@@ -664,19 +670,24 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 			try {
 				const provider = await getVaultActionsFromProviderAsWindow();
 				const vaultActions = provider.actions;
-				vaultActions.withdrawAllUserLiquidityPool({});
+				vaultActions.withdrawAllUserLiquidityPool<{}>({ account_id: getWallet().getAccountId() });
 				const walletResponse = await nearWalletAsWindow.getWalletCallback();
 				response.data = walletResponse || {};
+				makeWait();
 				return response;
 			} catch (e: any) {
-				dispatchToastNotify({ title: 'Window was blocked by browser' });
+				response.toast.title = 'Wallet was blocked by browser. Please, allow pop-up window and try again.';
+				response.message = response.toast.title;
+				response.toast.Icon = ErrorIcon;
+				response.success = false;
+				return response;
 			}
-			await makeWait(1500);
-			response.data = await ProviderPattern.getProviderInstance()
-				.getProviderActions()
-				.getVaultActions()
-				.withdrawAllUserLiquidityPool({});
-			return response;
+			// await makeWait(1500);
+			// response.data = await ProviderPattern.getProviderInstance()
+			// 	.getProviderActions()
+			// 	.getVaultActions()
+			// 	.withdrawAllUserLiquidityPool({});
+			// return response;
 		} catch (e: any) {
 			response.success = false;
 			response.message = e?.message || 'Unknow error to Withdraw Reward Tokens';
@@ -862,19 +873,21 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 						<>Farm not enabled to auto-compound yet</>
 					)}
 				</ButtonPrimary>
-				{vaultIsEnabled() && getWallet().isSignedIn() && (
-					<ButtonPrimary
-						style={{
-							minWidth: '170px',
-							margin: '30px 0 10px 0',
-							height: '50px',
-						}}
-						onClick={() => {
-							doWithdrawAll();
-						}}>
-						Withdraw All
-					</ButtonPrimary>
-				)}
+				{vaultIsEnabled() &&
+					getWallet().isSignedIn() &&
+					(Number(populatedSeed.vault.user.shares_tvl) > 0)(
+						<ButtonPrimary
+							style={{
+								minWidth: '170px',
+								margin: '30px 0 10px 0',
+								height: '50px',
+							}}
+							onClick={() => {
+								doWithdrawAll();
+							}}>
+							Withdraw All
+						</ButtonPrimary>,
+					)}
 			</div>
 		</CardBodyTabsContentItem>
 	);
@@ -1778,5 +1791,4 @@ const ModalStakeFooter = (props: {
 		</>
 	);
 };
-
 export default CardVault;
