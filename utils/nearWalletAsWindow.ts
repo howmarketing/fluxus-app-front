@@ -25,6 +25,7 @@ export const nearWalletAsWindow = {
 	debug: true,
 
 	async getWindowWalletRPC<T extends unknown>(returnRPCFromProviderPattern = false): Promise<T> {
+		const $this = this;
 		try {
 			const providerKey = `${returnRPCFromProviderPattern ? 'providerPattern' : 'nearRPC'}`;
 			const setupRersponse = await this._setUp();
@@ -32,7 +33,7 @@ export const nearWalletAsWindow = {
 				throw new Error(setupRersponse.message);
 			}
 			const walletWindowDOM = this._getWalletWindow();
-			this.walletWindowReference.focus();
+			$this.walletWindowReference.focus();
 			const rpcProvider = await new Promise<T | undefined>((resolve, reject) => {
 				const rpcTimeout = setTimeout(() => {
 					resolve(undefined);
@@ -158,11 +159,11 @@ export const nearWalletAsWindow = {
 			$this.opnerWindow = {} as Window;
 			$this.walletWindowReference = {} as Window;
 			try {
-				if (this._verifyIfWalletWindowIsOpen()) {
-					this.walletWindowReference?.focus();
-					this.walletWindowReference?.close();
+				if ($this._verifyIfWalletWindowIsOpen()) {
+					$this.walletWindowReference?.focus();
+					$this.walletWindowReference?.close();
 				}
-				await this._defineOpnerWindow();
+				await $this._defineOpnerWindow();
 			} catch (e: any) {
 				$this.callbackData.message = e?.message || 'unknown for close at reset pros.';
 			}
