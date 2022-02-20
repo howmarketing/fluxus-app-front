@@ -7,7 +7,6 @@ import { H1 } from '@components/HomePage/styles';
 import { useNearRPCContext } from '@hooks/index';
 // import NearLogo from '@public/near-logo.png';
 import ButtonPrimary from '@components/ButtonPrimary';
-import { withdrawAllReward } from '@services/m-token';
 import ProviderPattern from '@services/ProviderPattern';
 
 const wallet: NextPage = function () {

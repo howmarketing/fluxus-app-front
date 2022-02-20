@@ -471,7 +471,7 @@ export const nearWalletAsWindow = {
 	},
 
 	_verifyIfWalletWindowIsOpen(): boolean {
-		const $this = this;
+		const $this = this as typeof nearWalletAsWindow;
 		try {
 			if (typeof $this.walletWindowReference.closed === 'undefined') {
 				return false;

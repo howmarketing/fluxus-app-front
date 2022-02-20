@@ -1535,9 +1535,13 @@ const ModalStakeFooter = (props: {
 	};
 
 	const getProviderFromWindowWallet = async (msTime?: number | undefined) => {
-		nearWalletAsWindow._makeItWaitBeforeClose = msTime && msTime >= 500 ? msTime : 500;
-		const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<ProviderPattern>(true);
-		return windowWalletProvider.getProvider();
+		const wallet = {} as {windowProvider: typeof nearWalletAsWindow};
+		Object.defineProperty(wallet, 'windowProvider', { value: nearWalletAsWindow, writable: true });
+		const walletProvider = wallet.windowProvider;
+
+		walletProvider._makeItWaitBeforeClose = msTime && msTime >= 500 ? msTime : 500;
+		const windowWalletProvider = await walletProvider.getWindowWalletRPC<ProviderPattern>(true);
+		return {provider: windowWalletProvider.getProvider(), wallet: walletProvider};
 	};
 
 	const depositNearToVault = async (
@@ -1555,9 +1559,9 @@ const ModalStakeFooter = (props: {
 				totalExecutionTime: 0,
 			};
 		}
-		const provider = await getProviderFromWindowWallet(100);
+		const {provider, wallet} = await getProviderFromWindowWallet(1500);
 		provider.getProviderActions().getVaultActions().storageDeposit(`${depositAmount}`);
-		const walletResponse = await nearWalletAsWindow.getWalletCallback();
+		const walletResponse = await wallet.getWalletCallback();
 		return { toast: { Icon: WarningIcon, title: 'Did not received amount for deposit action' }, ...walletResponse };
 	};
 
@@ -1581,11 +1585,11 @@ const ModalStakeFooter = (props: {
 			totalExecutionTime: 0,
 		};
 		try {
-			const provider = await getProviderFromWindowWallet(5000);
+			const {provider, wallet} = await getProviderFromWindowWallet(2500);
 			const vaultActions = provider.getProviderActions().getVaultActions();
 
 			vaultActions.wrapNearBalance();
-			const walletResponse = await nearWalletAsWindow.getWalletCallback();
+			const walletResponse = await wallet.getWalletCallback();
 			response.data = walletResponse || {};
 			return response;
 		} catch (e: any) {
@@ -1608,11 +1612,11 @@ const ModalStakeFooter = (props: {
 			totalExecutionTime: 0,
 		};
 		try {
-			const provider = await getProviderFromWindowWallet(2000);
+			const {provider, wallet} = await getProviderFromWindowWallet(1500);
 			const vaultActions = provider.getProviderActions().getVaultActions();
 
 			vaultActions.batchTransactionDepositAndWrapNearBalance({ amountToDeposit: `${depositAmount || '0'}` });
-			const walletResponse = await nearWalletAsWindow.getWalletCallback();
+			const walletResponse = await wallet.getWalletCallback();
 			await makeWait(2000);
 			response.data = walletResponse || {};
 			return response;
@@ -1636,16 +1640,19 @@ const ModalStakeFooter = (props: {
 			finishedTime: 0,
 			totalExecutionTime: 0,
 		};
+		const {provider, wallet} = await getProviderFromWindowWallet(1500);
+		await makeWait(1000);
 		try {
-			await makeWait(1000);
-			const provider = await getProviderFromWindowWallet(2000);
 			const vaultActions = provider.getProviderActions().getVaultActions();
-			vaultActions.addToVault({ account_id: getWallet().getAccountId() });
-			const walletResponse = await nearWalletAsWindow.getWalletCallback();
+			await vaultActions.addToVault({ account_id: getWallet().getAccountId() });
+			const walletResponse = await wallet.getWalletCallback();
 			response.data = walletResponse || {};
 			return response;
 		} catch (e: any) {
 			console.error(e);
+			console.log('================================');
+			console.log({provider, wallet});
+			console.log('================================');
 			response.success = false;
 			response.message = e?.message || 'Unknown error when add to vault.';
 			response.toast = { Icon: ErrorIcon, title: 'Unknown error when add to vault.' };
