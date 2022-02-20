@@ -1613,9 +1613,11 @@ const ModalStakeFooter = (props: {
 
 			vaultActions.batchTransactionDepositAndWrapNearBalance({ amountToDeposit: `${depositAmount || '0'}` });
 			const walletResponse = await nearWalletAsWindow.getWalletCallback();
+			await makeWait(2000);
 			response.data = walletResponse || {};
 			return response;
 		} catch (e: any) {
+			console.error(e);
 			response.success = false;
 			response.message = e?.message || 'Unknow error to wrap near';
 			response.toast = { Icon: ErrorIcon, title: 'Unknow error to wrap near' };
@@ -1643,9 +1645,10 @@ const ModalStakeFooter = (props: {
 			response.data = walletResponse || {};
 			return response;
 		} catch (e: any) {
+			console.error(e);
 			response.success = false;
-			response.message = e?.message || 'Unknow error when add to vault';
-			response.toast = { Icon: ErrorIcon, title: 'Unknow error when add to vault' };
+			response.message = e?.message || 'Unknown error when add to vault.';
+			response.toast = { Icon: ErrorIcon, title: 'Unknown error when add to vault.' };
 			return response;
 		}
 	};
