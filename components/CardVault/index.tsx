@@ -660,12 +660,22 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 			totalExecutionTime: 0,
 		};
 		try {
-			const provider = await getVaultActionsFromProviderAsWindow();
-			const vaultActions = provider.actions;
-			vaultActions.withdrawAllUserLiquidityPool({});
-			const walletResponse = await nearWalletAsWindow.getWalletCallback();
-			await makeWait(2000);
-			response.data = walletResponse || {};
+			await makeWait(1500);
+			try {
+				const provider = await getVaultActionsFromProviderAsWindow();
+				const vaultActions = provider.actions;
+				vaultActions.withdrawAllUserLiquidityPool({});
+				const walletResponse = await nearWalletAsWindow.getWalletCallback();
+				response.data = walletResponse || {};
+				return response;
+			} catch (e: any) {
+				dispatchToastNotify({ title: 'Window was blocked by browser' });
+			}
+			await makeWait(1500);
+			response.data = await ProviderPattern.getProviderInstance()
+				.getProviderActions()
+				.getVaultActions()
+				.withdrawAllUserLiquidityPool({});
 			return response;
 		} catch (e: any) {
 			response.success = false;
@@ -1648,13 +1658,12 @@ const ModalStakeFooter = (props: {
 			totalExecutionTime: 0,
 		};
 
-
 		try {
 			const balance = await getVaultStorageBalanceOf();
 			console.log('addToVault called', { balance });
 			await makeWait(3000);
 			console.log('waitted to start process');
-			if(Number(balance.available) < 0.000000000001){
+			if (Number(balance.available) < 0.000000000001) {
 				throw new Error(`Vault not finished yet`);
 			}
 			const args = { account_id: getWallet().getAccountId() };
