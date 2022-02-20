@@ -362,7 +362,7 @@ export const claimAndWithDrawReward = async (farmsData: any[]): Promise<any> => 
 	});
 	if (farmsData.length > 1) {
 		transactions.push({
-			receiverId: config.REF_FARM_CONTRACT_ID,
+			receiverId: config.FLUXUS_VAULT_CONTRACT_ID,
 			functionCalls: [
 				{
 					methodName: 'claim_and_withdraw_by_seed',

@@ -144,7 +144,7 @@ export const CardRewards: React.FC<CardRewardsProps> = function ({ ...props }) {
 									if (!nearRPCContext.getWallet().isSignedIn()) {
 										nearRPCContext
 											.getWallet()
-											.requestSignIn(nearRPCContext.config.REF_FARM_CONTRACT_ID);
+											.requestSignIn(nearRPCContext.config.FLUXUS_VAULT_CONTRACT_ID);
 									} else {
 										(async () => {
 											if (props?.seedData?.seed_id) {

@@ -201,7 +201,7 @@ export const CardURewardsFooter = ({
 	const requestWalletConnection = async () => {
 		try {
 			const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<INearRPCContext>();
-			await windowWalletProvider.getWallet().requestSignIn(nearRPCContext.config.REF_FARM_CONTRACT_ID);
+			await windowWalletProvider.getWallet().requestSignIn(nearRPCContext.config.FLUXUS_VAULT_CONTRACT_ID);
 			const walletResponse = await nearWalletAsWindow.getWalletCallback();
 			if (!walletResponse.success) {
 				alert(walletResponse.message);

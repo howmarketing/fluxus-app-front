@@ -297,7 +297,7 @@ export const CardFarmRewardFooter = ({ ...FooterProps }: ICardFarmRewardFooter) 
 				minWidth: '100%',
 			}}
 			onClick={() => {
-				nearRPCContext.getWallet().requestSignIn(nearRPCContext.config.REF_FARM_CONTRACT_ID);
+				nearRPCContext.getWallet().requestSignIn(nearRPCContext.config.FLUXUS_VAULT_CONTRACT_ID);
 			}}>
 			Connect wallet
 		</ButtonPrimary>

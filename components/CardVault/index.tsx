@@ -312,7 +312,7 @@ export const CardVaultRewardFooter = ({ ...FooterProps }: ICardVaultRewardFooter
 				padding: '12px',
 			}}
 			onClick={() => {
-				nearRPCContext.getWallet().requestSignIn(nearRPCContext.config.REF_FARM_CONTRACT_ID);
+				nearRPCContext.getWallet().requestSignIn(nearRPCContext.config.FLUXUS_VAULT_CONTRACT_ID);
 			}}>
 			Connect wallet
 		</ButtonPrimary>
@@ -847,10 +847,7 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 						}
 					}}>
 					{vaultIsEnabled() ? (
-						<>
-							{(getWallet().isSignedIn() && 'Stake with near') || 'Connect Wallet'}{' '}
-							<small>{populatedSeed.pool_id}</small>
-						</>
+						<>{(getWallet().isSignedIn() && 'Stake') || 'Connect Wallet'} </>
 					) : (
 						<>Farm not enabled to auto-compound yet</>
 					)}
@@ -1641,8 +1638,7 @@ const ModalStakeFooter = (props: {
 			await makeWait(1000);
 			const provider = await getProviderFromWindowWallet(2000);
 			const vaultActions = provider.getProviderActions().getVaultActions();
-
-			vaultActions.addToVault({});
+			vaultActions.addToVault({ account_id: getWallet().getAccountId() });
 			const walletResponse = await nearWalletAsWindow.getWalletCallback();
 			response.data = walletResponse || {};
 			return response;

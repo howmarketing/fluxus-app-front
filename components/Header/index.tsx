@@ -51,7 +51,7 @@ export const Header: React.FC<IHeader> = ({ ...props }) => {
 				}, 2500);
 			});
 			await windowWalletProvider.getProvider().getWallet().requestSignIn({
-				contractId: windowWalletProvider.getProvider().getProviderConfigData().REF_FARM_CONTRACT_ID,
+				contractId: windowWalletProvider.getProvider().getProviderConfigData().FLUXUS_VAULT_CONTRACT_ID,
 			});
 			const walletResponse = await nearWalletAsWindow.getWalletCallback();
 			if (!walletResponse.success) {
