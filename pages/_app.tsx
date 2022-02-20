@@ -19,7 +19,6 @@ const MyApp: React.FC<AppProps> = function ({ Component, pageProps }) {
 			windowCheck = typeof window === 'undefined' ? false : window;
 			return <>{windowCheck !== false && children}</>;
 		} catch (e: any) {
-			console.log(`SafeHydrate: ${e?.message || `Unknown`}`);
 			return <>{` `}</>;
 		}
 	};

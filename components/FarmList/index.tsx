@@ -10,7 +10,12 @@ import { getRewardByTokenId, getStakedListByAccountId, getUnclaimedReward } from
 import BoxGhost from '@components/BoxGhost';
 import CardFarm from '@components/CardFarm/index';
 import { ICardFarmState } from '@components/CardFarm';
-import { WrapBox, SwitchArea, SwitchAreaTitle, SwitchAreaTitleTag } from './styles';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import { checkTransaction } from '@services/swap';
+import { toReadableNumber } from '@utils/numbers';
+import { getPoolTvlFiatPrice, IPoolFiatPrice } from '@services/api';
+import { IPopulatedPoolExtraDataToken, IPopulatedPoolExtraDataVolume } from '@components/VaultList';
+import { WrapBox, SwitchArea, SwitchAreaTitle, SwitchAreaTitleTag, ProgressArea } from './styles';
 
 export type IPopulatedPool = PoolDetails & { populated_tokens: Array<TokenMetadata>; shares_lptoken: any };
 export type IPopulatedSeed = ISeedInfo & {
@@ -35,6 +40,8 @@ const FarmList: React.FC = function () {
 	// List of seeds to show farms at farm box component
 	const [FarmsState, setFarmsState] = useState<Array<IPopulatedSeed>>([] as Array<IPopulatedSeed>);
 
+	const [transactionHashes, setTransactionHashs] = useState<Array<string>>(['']);
+
 	// Used to fixed box height while load and list seeds
 	const setFarmBoxMinHeightWithCurrentHeight = async () => {
 		try {
@@ -48,6 +55,7 @@ const FarmList: React.FC = function () {
 
 			setStateFarmsBoxCssStyleProperties({
 				minHeight: minHEightAsCurrentHeightValue,
+				position: 'relative',
 			} as React.CSSProperties);
 
 			return true;
@@ -125,14 +133,16 @@ const FarmList: React.FC = function () {
 				})(populateSeed.seed_id);
 				// set the pool ID "12" at the populated seed object
 				populateSeed.pool_id = poolID;
-				let populatedPool = {} as IPopulatedPool;
-				populatedPool = (await nearRPCContext.getNearPresets().get_pool_details(poolID)) as IPopulatedPool;
+				const poolTvlFiatPrice = await getPoolTvlFiatPrice({ pool_id: poolID });
+				const populatedPool = { ...poolTvlFiatPrice } as IPoolFiatPrice &
+					IPopulatedPoolExtraDataToken &
+					IPopulatedPoolExtraDataVolume;
 				populatedPool.populated_tokens = await Promise.all(
 					populatedPool.token_account_ids.map(async (token_id: string) =>
 						ftGetTokenMetadata(token_id, false),
 					),
 				);
-				populatedPool.shares_lptoken = await getSharesInPool(poolID);
+				populatedPool.shares_lptoken = await getSharesInPool({ pool_id: poolID });
 				populateSeed.pool = populatedPool;
 				populateSeed.token_from = await ftGetTokenMetadata(populateSeed.pool.token_account_ids[0]);
 				populateSeed.token_to = await ftGetTokenMetadata(populateSeed.pool.token_account_ids[1]);
@@ -153,7 +163,7 @@ const FarmList: React.FC = function () {
 
 		// All rewards available from farm contract
 		setTimeout(() => {
-			// console.log('populatedSeeds: ', populatedSeeds);
+			console.log('Loaded Farms: ', populatedSeeds);
 			setFarmsState(populatedSeeds);
 			setTimeout(() => {
 				resetFarmBoxMinHeight();
@@ -161,10 +171,42 @@ const FarmList: React.FC = function () {
 		}, 200);
 	};
 
+	const getTrasactionHashs = () => new URLSearchParams(window.location.search).get('transactionHashes')?.split(',');
+
+	// Implementation in progress
+	const checkTransactions = async () => {
+		const transactions = getTrasactionHashs() || [];
+		const transactionsResponse = await Promise.all(
+			transactions.map(async (txHash: string) => {
+				const { transaction, transaction_outcome } = await checkTransaction(txHash);
+				const actionsCount = transaction?.actions?.length || 0;
+				const offsetTransaction = actionsCount < 1 ? -1 : actionsCount > 1 ? 1 : 0;
+				const methodName =
+					offsetTransaction >= 0
+						? transaction?.actions[offsetTransaction]?.FunctionCall?.method_name
+						: 'action_not_founded';
+				const executorId = transaction_outcome?.outcome?.executor_id;
+				const gasBurnt = transaction_outcome?.outcome?.gas_burnt || 0;
+				const gasBurntReadAble = toReadableNumber(24, `${gasBurnt}`);
+				const explorerId = transaction_outcome?.id;
+				const explorerLink = `${nearRPCContext.config.explorerUrl}/transactions/${explorerId}`;
+				return { methodName, executorId, gasBurnt, gasBurntReadAble, explorerId, explorerLink };
+			}),
+		);
+		console.log(transactionsResponse);
+	};
+
 	useEffect(() => {
-		loadFarms();
+		const DOMLoaded = true;
+		(async () => {
+			if (DOMLoaded) {
+				loadFarms();
+				checkTransactions();
+			}
+		})();
 		return () => {
 			setFarmsState([]);
+			setTransactionHashs([]);
 		};
 	}, [useFluxusFarmContractState]);
 
@@ -205,6 +247,12 @@ const FarmList: React.FC = function () {
 					</SwitchArea>
 				</SwitchArea>
 				<BoxGhost data-componentname="farmBoxElement" style={stateFarmsBoxCssStyleProperties}>
+					{FarmsState.length < 1 && (
+						<ProgressArea>
+							<CircularProgress color="secondary" />
+							<h4>Loading Farms</h4>
+						</ProgressArea>
+					)}
 					{FarmsState.map((item: IPopulatedSeed, index: number) => (
 						<CardFarm
 							key={item.seed_id}

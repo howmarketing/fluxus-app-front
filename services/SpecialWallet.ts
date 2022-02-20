@@ -6,12 +6,16 @@ import { ConnectedWalletAccount, WalletConnection } from 'near-api-js';
 import { Action, createTransaction } from 'near-api-js/lib/transaction';
 import { PublicKey } from 'near-api-js/lib/utils';
 
-export default class SpecialWallet extends WalletConnection {
-	declare _connectedAccount: SpecialWalletAccount;
+export default class AbstractMainWallet extends WalletConnection {
+	declare _connectedAccount: AbstractMainWalletAccount;
 
 	account() {
 		if (!this._connectedAccount) {
-			this._connectedAccount = new SpecialWalletAccount(this, this._near.connection, this._authData.accountId);
+			this._connectedAccount = new AbstractMainWalletAccount(
+				this,
+				this._near.connection,
+				this._authData.accountId,
+			);
 		}
 
 		return this._connectedAccount;
@@ -26,7 +30,7 @@ export default class SpecialWallet extends WalletConnection {
 		actions: Action[];
 		nonceOffset?: number;
 	}) {
-		return this._connectedAccount.createTransaction({
+		return this.account().createTransaction({
 			receiverId,
 			actions,
 			nonceOffset,
@@ -34,7 +38,7 @@ export default class SpecialWallet extends WalletConnection {
 	}
 }
 
-class SpecialWalletAccount extends ConnectedWalletAccount {
+class AbstractMainWalletAccount extends ConnectedWalletAccount {
 	async sendTransactionWithActions(receiverId: string, actions: Action[]) {
 		return this.signAndSendTransaction(receiverId, actions);
 	}

@@ -13,15 +13,15 @@ import {
 	FLUXUS_FARM_CONTRACT_ID,
 	getWallet,
 } from '@services/near';
-import { ftGetStorageBalance, TokenMetadata } from '../services/ft-contract';
-import { ACCOUNT_MIN_STORAGE_AMOUNT, currentStorageBalanceOfFarm } from '../services/account';
+import { ftGetStorageBalance, TokenMetadata } from '@services/ft-contract';
+import { ACCOUNT_MIN_STORAGE_AMOUNT, currentStorageBalanceOfFarm } from '@services/account';
 import {
 	MIN_DEPOSIT_PER_TOKEN,
 	storageDepositAction,
 	STORAGE_PER_TOKEN,
 	STORAGE_TO_REGISTER_WITH_MFT,
 	MIN_DEPOSIT_PER_TOKEN_FARM,
-} from '../services/creators/storage';
+} from '@services/creators/storage';
 
 export const LP_TOKEN_DECIMALS = 24;
 export const FARM_STORAGE_BALANCE = '0.045';
@@ -99,8 +99,6 @@ export const unstake = async ({
 	msg = '',
 	useFluxusFarmContract = false,
 }: UnstakeOptions & { useFluxusFarmContract?: boolean }) => {
-	console.log({ amount, div: toNonDivisibleNumber(LP_TOKEN_DECIMALS, amount) });
-
 	const transactions: Transaction[] = [
 		{
 			receiverId: useFluxusFarmContract ? FLUXUS_FARM_CONTRACT_ID : REF_FARM_CONTRACT_ID,
@@ -195,9 +193,6 @@ export const withdrawAllReward = async (
 	unregister = false,
 	useFluxusFarmContract = false,
 ) => {
-	// console.log('withdrawAllReward (useFluxusFarmContract): ', useFluxusFarmContract);
-	// console.log('withdrawAllReward (checkedList): ', checkedList);
-	// return;
 	const transactions: Transaction[] = [];
 	const token_id_list = Object.keys(checkedList);
 	const ftBalancePromiseList: any[] = [];
@@ -237,12 +232,5 @@ export const withdrawAllReward = async (
 		functionCalls,
 	});
 
-	// console.log('Withdraw transactions: ', transactions);
-	// console.log('120 seconds to redirect to confirmation');
-	// await new Promise(resolve => {
-	// 	setTimeout(() => {
-	// 		resolve(true);
-	// 	}, 12000);
-	// });
 	return executeFarmMultipleTransactions(transactions);
 };

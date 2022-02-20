@@ -30,6 +30,7 @@ export const storageDepositAction = ({
 		account_id: accountId,
 		registration_only: registrationOnly,
 	},
+	gas: '4000000000000',
 	amount,
 });
 

@@ -24,6 +24,7 @@ import { claimRewardBySeed, getRewardByTokenId, getUnclaimedReward } from '@serv
 import { toNonDivisibleNumber, toReadableNumber } from '@utils/numbers';
 import { IDarkModeContext } from '@contexts/darkMode';
 import { nearWalletAsWindow } from '@utils/nearWalletAsWindow';
+import { INearRPCContext } from '@contexts/nearData/nearRPCData';
 import {
 	CardFarmAreaStyled,
 	CardContainerStyled,
@@ -70,8 +71,8 @@ export const CardFarm = (props: ICardFarmProps): ReactElement => {
 	const TabsHeader = (props: { populatedSeed: IPopulatedSeed; activedTabIndex: number }) => {
 		const { populatedSeed, activedTabIndex } = props;
 		const tabsProps = [
-			{ title: 'Management', isActive: activedTabIndex === 0 },
-			{ title: 'Info', isActive: activedTabIndex === 1 },
+			// { title: 'Management', isActive: activedTabIndex === 0 },
+			{ title: 'Info', isActive: activedTabIndex === 0 },
 		];
 		return (
 			<DisplayerCardBodyTabsHeader
@@ -83,6 +84,9 @@ export const CardFarm = (props: ICardFarmProps): ReactElement => {
 	};
 	useEffect(() => {
 		setUseFluxusFarmContractState(typeof useFluxusFarmContract !== 'undefined' ? useFluxusFarmContract : false);
+		return () => {
+			setUseFluxusFarmContractState(false);
+		};
 	}, []);
 	return (
 		<CardFarmAreaStyled {...props} title={getCardTitle(populatedSeed)} data-status={cardToggleState}>
@@ -91,8 +95,6 @@ export const CardFarm = (props: ICardFarmProps): ReactElement => {
 					<DisplayerPoolCoinGroupIcons populatedSeed={populatedSeed} />
 					<DisplayerFarmLabel populatedSeed={populatedSeed} />
 					<DisplayerFarmEarned populatedSeed={populatedSeed} />
-					<DisplayerFarmTotalReward populatedSeed={populatedSeed} />
-					<DisplayerFarmTotalClaimedReward populatedSeed={populatedSeed} />
 					<DisplayerFarmTotalUnClaimedReward populatedSeed={populatedSeed} />
 					<DisplayerFarmTotalValueLocked populatedSeed={populatedSeed} />
 					<DisplayerFarmEarnType populatedSeed={populatedSeed} />
@@ -103,13 +105,13 @@ export const CardFarm = (props: ICardFarmProps): ReactElement => {
 				<CardContainerStyled data-keyname="CardBodyContainerStyled" title="Card Container">
 					<TabsHeader populatedSeed={populatedSeed} activedTabIndex={tabActivedState} />
 					<CardBodyTabsContent data-keyname="CardBodyTabsContent" title="Card body tabs content area">
-						<DisplayerCardBodyTabBodyForManagment
+						{/* <DisplayerCardBodyTabBodyForManagment
 							populatedSeed={populatedSeed}
 							isActive={tabActivedState === 0}
-						/>
+						/> */}
 						<DisplayerCardBodyTabBodyForInfo
 							populatedSeed={populatedSeed}
-							isActive={tabActivedState === 1}
+							isActive={tabActivedState === 0}
 						/>
 						<DisplayerCardBodyRewards
 							populatedSeed={populatedSeed}
@@ -135,6 +137,7 @@ export type ICardFarmRewardFooter = {
 	loadCardRewards?: (updateRewardsValues?: boolean) => Promise<any>;
 	setStateRewardsIsLoading?: (value: React.SetStateAction<boolean>) => void;
 };
+
 export const CardFarmRewardFooter = ({ ...FooterProps }: ICardFarmRewardFooter) => {
 	const themeProvided = useDarkMode();
 	const nearRPCContext = useNearRPCContext();
@@ -150,18 +153,17 @@ export const CardFarmRewardFooter = ({ ...FooterProps }: ICardFarmRewardFooter) 
 			if (typeof setStateRewardsIsLoading === 'function') {
 				setStateRewardsIsLoading(true);
 			}
-			const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC();
-			const claimed = await windowWalletProvider
+			nearWalletAsWindow._makeItWaitBeforeClose = 2000;
+			const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<INearRPCContext>();
+			await windowWalletProvider
 				.getNearPresets()
 				.claime_user_rewards_by_seed(seed_id, useFluxusFarmContract)
 				.catch((err: any) => {
+					// Error log
 					console.log('claimAllFarmedRewardTokens:(error) ', err?.message || 'unknown error');
 				});
-			console.log(`Successfully Claimed rewards for the seed id ${seed_id} `, claimed);
 			const walletResponse = await nearWalletAsWindow.getWalletCallback(30000);
-			console.log('walletResponse: ', walletResponse);
 			if (!walletResponse.success) {
-				console.log(walletResponse);
 				window.alert(walletResponse.message);
 			}
 			if (typeof loadCardRewards === 'function') {
@@ -295,7 +297,7 @@ export const CardFarmRewardFooter = ({ ...FooterProps }: ICardFarmRewardFooter) 
 				minWidth: '100%',
 			}}
 			onClick={() => {
-				nearRPCContext.getWallet().requestSignIn();
+				nearRPCContext.getWallet().requestSignIn(nearRPCContext.config.REF_FARM_CONTRACT_ID);
 			}}>
 			Connect wallet
 		</ButtonPrimary>
@@ -334,8 +336,20 @@ export const formatMoneyWithShortName = (amount: string) => {
 		const shortValueParts = amount.split(',');
 		const shortValueCount = shortValueParts.length;
 		const shortValueName =
-			shortValueCount >= 4 ? `Bi` : shortValueCount >= 3 ? 'Mi' : shortValueCount >= 2 ? 'Mil' : '';
-		return shortValueParts.slice(0, 1) + shortValueName;
+			shortValueCount >= 6
+				? `Q`
+				: shortValueCount >= 5
+				? `T`
+				: shortValueCount >= 4
+				? `B`
+				: shortValueCount >= 3
+				? 'M'
+				: shortValueCount >= 2
+				? 'K'
+				: '';
+		return `${shortValueParts.slice(0, 1).join('')}${
+			shortValueCount < 2 ? '' : `.${shortValueParts.slice(1, 2).join('').substring(0, 1)}`
+		}${shortValueName}`;
 	} catch (e: any) {
 		console.error(e);
 		return amount;
@@ -366,19 +380,7 @@ export const DisplayerFarmLabel = (props: { populatedSeed: IPopulatedSeed }) => 
 	const { populatedSeed } = props;
 	return (
 		<CardHeaderCoinPairsLabel data-keyname="CardHeaderCoinPairsLabel" title="Card Header coin pairs - label">
-			<h3>
-				{getCardTitle(populatedSeed)}
-				<small
-					style={{
-						fontSize: '10px',
-						fontStyle: 'italic',
-						position: 'static',
-						marginLeft: '4px',
-						marginTop: '-5px',
-					}}>
-					{`${populatedSeed.seed_id}`.split('@').splice(1, 1).join('')}
-				</small>
-			</h3>
+			<h3>{getCardTitle(populatedSeed)}</h3>
 		</CardHeaderCoinPairsLabel>
 	);
 };
@@ -458,8 +460,8 @@ export const DisplayerFarmTotalUnClaimedReward = (props: { populatedSeed: IPopul
 		return totalUnclaimedReward;
 	})();
 	return (
-		<CardHeaderEarned data-keyname="CardHeaderEarned" title="Card Header Total Farm Unclaimed Rewards">
-			<label htmlFor="Total Farm Unclaimed Rewards">TFUcRw</label>
+		<CardHeaderEarned data-keyname="CardHeaderEarned" title="Total Farm Unclaimed Rewards">
+			<label htmlFor="Total Farm Unclaimed Rewards">Unclaimed Rewards</label>
 			<span>$ {formatMoneyWithShortName(formatMoney(totalFarmUnclaimedReward))}</span>
 		</CardHeaderEarned>
 	);
@@ -471,7 +473,7 @@ export const DisplayerFarmTotalValueLocked = (props: { populatedSeed: IPopulated
 	const tvlNumber = Number(tvl);
 	return (
 		<CardHeaderTotalValueLocked data-keyname="CardHeaderTotalValueLocked" title="Card Header Total value locked">
-			<label htmlFor="Total value locked">Total value locked</label>
+			<label htmlFor="Total value locked">Total Value Locked</label>
 			<span>$ {formatMoneyWithShortName(formatMoney(tvlNumber))}</span>
 		</CardHeaderTotalValueLocked>
 	);
@@ -536,8 +538,6 @@ export const DisplayerCardBodyTabBodyForManagment = (props: { populatedSeed: IPo
 					Manage {getCardTitle(populatedSeed)} LP Token into Fluxus Farm to start to earn reward tokens
 					including UXU.
 				</p>
-				<p>Card not available yeat</p>
-				<span>Keep in touch to see the new features soon.</span>
 			</CardBodyTabsContentItem>
 		</>
 	);
@@ -714,6 +714,10 @@ export const DisplayerCardBodyRewards = (props: {
 				loadCardRewards();
 			}
 		})();
+		return () => {
+			setRewardsStateList([] as Array<IPopulatedReward>);
+			setStateRewardsIsLoading(false);
+		};
 	}, []);
 
 	return (
@@ -831,18 +835,25 @@ const ModalUnstakeContent = (props: {
 	};
 
 	useEffect(() => {
+		const DOMLoaded = true;
 		let timeToUpdateValue = setTimeout(() => {}, 10);
-		if (unstakeInputValue.length > 0 && unstakeInputValue !== unstakeValue) {
-			const formatedAmount = formatReadableAmountValue(unstakeInputValue);
-			const amountIsLowerThenTotalInStake =
-				Number(formatedAmount) <= Number(toReadableNumber(24, `${totalStaked}`));
-			const amount = amountIsLowerThenTotalInStake ? formatedAmount : toReadableNumber(24, `${totalStaked}`);
-			timeToUpdateValue = setTimeout(() => {
-				setUnstakeInputValue(amount);
-			}, 2000);
-			setUnstakeValue(amount);
-			updateModalValues(amount);
-		}
+		(async () => {
+			if (DOMLoaded) {
+				if (unstakeInputValue.length > 0 && unstakeInputValue !== unstakeValue) {
+					const formatedAmount = formatReadableAmountValue(unstakeInputValue);
+					const amountIsLowerThenTotalInStake =
+						Number(formatedAmount) <= Number(toReadableNumber(24, `${totalStaked}`));
+					const amount = amountIsLowerThenTotalInStake
+						? formatedAmount
+						: toReadableNumber(24, `${totalStaked}`);
+					timeToUpdateValue = setTimeout(() => {
+						setUnstakeInputValue(amount);
+					}, 2000);
+					setUnstakeValue(amount);
+					updateModalValues(amount);
+				}
+			}
+		})();
 		return () => {
 			clearTimeout(timeToUpdateValue);
 		};
@@ -930,6 +941,7 @@ const ModalUnstakeFooter = (props: {
 			useFluxusFarmContract,
 		};
 		await unstake(unstakeValues).catch((error: any) => {
+			// Error log
 			console.log('Stake error: ', error);
 		});
 		return unstakeValues;
@@ -1017,7 +1029,6 @@ const ModalStakeContent = (props: {
 
 	const updateModalValues = (totalToStake: number | string) => {
 		const amount: string = toReadableNumber(24, toNonDivisibleNumber(24, `${totalToStake || '0'}`));
-		console.log('updateStakeModalValues amount: ', { totalToStake, amount });
 		themeProvided.modal.setModalProps({
 			isActived: true,
 			header: themeProvided.modal.modalProps.header,
@@ -1033,20 +1044,26 @@ const ModalStakeContent = (props: {
 	};
 
 	useEffect(() => {
+		const DOMLoaded = true;
 		let timeToUpdateValue = setTimeout(() => {}, 10);
-		if (stakeInputValue.length > 0 && stakeInputValue !== stakeValue) {
-			const formatedAmount = formatReadableAmountValue(stakeInputValue);
-			const amountIsLowerThenTotalAvailableToStake =
-				Number(formatedAmount) <= Number(toReadableNumber(24, `${totalAvailableToStake}`));
-			const amount = amountIsLowerThenTotalAvailableToStake
-				? formatedAmount
-				: toReadableNumber(24, `${totalAvailableToStake}`);
-			timeToUpdateValue = setTimeout(() => {
-				setStakeInputValue(amount);
-			}, 2000);
-			setStakeValue(amount);
-			updateModalValues(amount);
-		}
+		(async () => {
+			if (DOMLoaded) {
+				if (stakeInputValue.length > 0 && stakeInputValue !== stakeValue) {
+					const formatedAmount = formatReadableAmountValue(stakeInputValue);
+					const amountIsLowerThenTotalAvailableToStake =
+						Number(formatedAmount) <= Number(toReadableNumber(24, `${totalAvailableToStake}`));
+					const amount = amountIsLowerThenTotalAvailableToStake
+						? formatedAmount
+						: toReadableNumber(24, `${totalAvailableToStake}`);
+					timeToUpdateValue = setTimeout(() => {
+						setStakeInputValue(amount);
+					}, 2000);
+					setStakeValue(amount);
+					updateModalValues(amount);
+				}
+			}
+		})();
+
 		return () => {
 			clearTimeout(timeToUpdateValue);
 		};
@@ -1088,7 +1105,6 @@ const ModalStakeContent = (props: {
 					}}
 					value={stakeInputValue}
 					onChange={(ev: ChangeEvent<HTMLInputElement>) => {
-						console.log('event: ', ev);
 						const value = ev.target.value.length > 0 ? ev.target.value : `0`;
 						if (value.slice(-1) === '.') {
 							setStakeInputValue(value);
@@ -1133,26 +1149,24 @@ const ModalStakeFooter = (props: {
 		// if (typeof setStateRewardsIsLoading === 'function') {
 		// 	setStateRewardsIsLoading(true);
 		// }
-		const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC();
+		const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<INearRPCContext>();
 		const tokenID = `${seed_id}`.split('@').splice(1, 1).join('');
 		const stakeValues = {
 			token_id: getMftTokenId(`${tokenID}`),
 			amount,
 			useFluxusFarmContract,
 		};
-		const staked = await windowWalletProvider
+		await windowWalletProvider
 			.getNearPresets()
 			.stake_farm_lp_Tokens(stakeValues)
 			.catch((error: any) => {
+				// Error log
 				console.log('Stake error: ', error);
 			});
 		const walletResponse = await nearWalletAsWindow.getWalletCallback();
-		console.log('walletResponse: ', walletResponse);
 		if (!walletResponse.success) {
-			console.log(walletResponse);
 			window.alert(walletResponse.message);
 		}
-		console.log('staked: ', amount);
 		return stakeValues;
 	};
 	return (

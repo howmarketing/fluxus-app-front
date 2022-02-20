@@ -77,14 +77,15 @@ export const getStakedListByAccountId = async ({
 	accountId = getWallet().getAccountId(),
 	useFluxusFarmContract = false,
 }): Promise<Record<string, string>> => {
-	if (!getWallet().isSignedIn()) {
+	if (!accountId) {
 		return {} as Record<string, string>;
 	}
-	const stakedList = await refFarmViewFunction({
+	const params = {
 		methodName: 'list_user_seeds',
 		args: { account_id: accountId },
 		useFluxusFarmContract,
-	});
+	};
+	const stakedList = await refFarmViewFunction(params);
 
 	return stakedList;
 };
@@ -185,10 +186,6 @@ export const getFarmInfo = async (
 	const userRewardsPerWeek = toReadableNumber(rewardToken.decimals, userRewardNumberPerWeek.toString());
 
 	const userUnclaimedRewardNumber: string = isSignedIn ? await getUnclaimedReward(farm.farm_id) : '0';
-	// const userUnclaimedReward = toPrecision(
-	//   toReadableNumber(rewardToken.decimals, userUnclaimedRewardNumber),
-	//   2
-	// );
 	const userUnclaimedReward = toReadableNumber(rewardToken.decimals, userUnclaimedRewardNumber);
 
 	const totalStaked =
@@ -308,7 +305,6 @@ export const getUnclaimedReward = async (
 		args: { account_id: accountId, farm_id },
 		useFluxusFarmContract,
 	};
-	// console.log(params);
 	return refFarmViewFunction(params);
 };
 

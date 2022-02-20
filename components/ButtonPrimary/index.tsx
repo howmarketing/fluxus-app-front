@@ -22,13 +22,7 @@ const ButtonPrimary = (props: IButton) => {
 		<ButtonStyled
 			theme={theme.title === 'DARK' ? 'DARK' : 'LIGHT'}
 			{...props}
-			onClick={
-				props?.onClick
-					? props.onClick
-					: ev => {
-							console.log('Nada de cuncao');
-					  }
-			}
+			onClick={props?.onClick ? props.onClick : ev => {}}
 		/>
 	);
 };

@@ -14,13 +14,15 @@ export async function getNearPrice(): Promise<INearPriceResponse | null> {
 			url: NEAR_FIAT_PRICE_URL,
 		});
 		if (!success) {
+			// Error log
 			console.log({ success, msg, response, body });
 			return null;
 		}
 		const { usd, eur, cny } = response.near;
 		return { usd, eur, cny, lastUpdatedAt: response.near.last_updated_at };
 	} catch (e: any) {
-		console.log(e);
+		// Error log
+		console.error(e);
 		return null;
 	}
 }

@@ -235,7 +235,8 @@ export const depositSwap = async ({ pool, tokenIn, tokenOut, amountIn, minAmount
 	return refFiManyFunctionCalls(actions);
 };
 
-export const checkTransaction = (txHash: string): Promise<Record<any, any> | { transaction: Record<any, any> }> => {
+export type ICheckTransaction = ({ transaction: Record<any, any> } & Record<any, any>) | Record<any, any>;
+export const checkTransaction = (txHash: string): Promise<ICheckTransaction> => {
 	const near = getNear();
 	return (near ? (near.connection.provider as JsonRpcProvider) : new JsonRpcProvider())?.sendJsonRpc(
 		'EXPERIMENTAL_tx_status',

@@ -47,4 +47,24 @@ export const GlobalStyle = createGlobalStyle`
         font-family: 'Syncopate', sans-serif;
 				font-weight: 700;
     }
+	.Toastify__toast-body {
+		margin: 0;
+		padding: 0;
+		display: flex;
+		align-items: center;
+		justify-content: flex-start;
+		height: 48px;
+		width: 100%;
+	}
+	.Toastify__toast-body > div:last-child {
+		display: flex;
+		width: 100%;
+		height: 100%;
+		justify-content: flex-start;
+		align-items: center;
+		position: relative;
+		flex-direction: row;
+		flex-wrap: nowrap;
+		gap: 8px;
+	}
 `;

@@ -11,6 +11,10 @@ import LogoImage from '@components/LogoImage';
 import { useNearRPCContext } from '@hooks/index';
 import { nearWalletAsWindow } from '@utils/nearWalletAsWindow';
 import { REF_FARM_CONTRACT_ID } from '@services/near';
+import { INearRPCContext } from '@contexts/nearData/nearRPCData';
+import ProviderPattern from '@ProviderPattern/index';
+import { resolve } from 'path';
+import AbstractMainMTokenProviderAction from '@ProviderPattern/models/Actions/AbstractMainMTokenProviderAction';
 import {
 	HeaderStyled,
 	HeaderContainer,
@@ -38,21 +42,29 @@ export const Header: React.FC<IHeader> = ({ ...props }) => {
 
 	const requestWalletConnection = async () => {
 		try {
-			const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC();
-			await windowWalletProvider.getWallet().requestSignIn(REF_FARM_CONTRACT_ID);
+			nearWalletAsWindow._makeItWaitBeforeClose = 3000;
+			const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<ProviderPattern>(true);
+			console.log('windowWalletProvider: ', windowWalletProvider);
+			await new Promise((resolve, reject) => {
+				setTimeout(() => {
+					resolve(true);
+				}, 2500);
+			});
+			await windowWalletProvider.getProvider().getWallet().requestSignIn({
+				contractId: windowWalletProvider.getProvider().getProviderConfigData().REF_FARM_CONTRACT_ID,
+			});
 			const walletResponse = await nearWalletAsWindow.getWalletCallback();
 			if (!walletResponse.success) {
-				console.log(walletResponse);
 				alert(walletResponse.message);
 				return;
 			}
-			console.log('walletResponse: ', walletResponse);
 			try {
 				window.document.querySelectorAll('body')[0].style.opacity = '0.3';
 				setTimeout(() => {
 					window.location.href = `${window.location.href}?loggedin=true`;
 				}, 2500);
 			} catch (e: any) {
+				// Error log
 				console.log(`Refresh window error.`);
 			}
 		} catch (e: any) {
@@ -62,16 +74,18 @@ export const Header: React.FC<IHeader> = ({ ...props }) => {
 
 	const requestWalletSignOutConnection = async () => {
 		try {
-			const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC();
-			windowWalletProvider.getWallet().signOut();
+			const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<ProviderPattern>(true);
+			windowWalletProvider.getProvider().getWallet().signOut();
 			try {
 				setTimeout(() => {
 					nearWalletAsWindow._getOpnerWindow().location.href =
 						nearWalletAsWindow._getOpnerWindow().location.href;
 				}, 500);
 			} catch (e: any) {
+				// Error log
 				console.log(
 					`Refresh window error. Please, refresh your window manually for apply the wallet sign out request..`,
+					e,
 				);
 			}
 		} catch (e: any) {
@@ -106,7 +120,9 @@ export const Header: React.FC<IHeader> = ({ ...props }) => {
 								Vaults
 							</Link>
 						</li>
-						<li className={currentUrlPath.indexOf('/deposit') >= 0 ? 'actived' : ''}>
+						<li
+							className={currentUrlPath.indexOf('/deposit') >= 0 ? 'actived' : ''}
+							style={{ display: 'none' }}>
 							<Link href="/deposit" scroll>
 								Deposit
 							</Link>

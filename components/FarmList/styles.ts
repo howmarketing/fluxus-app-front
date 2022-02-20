@@ -71,3 +71,22 @@ export const SwitchAreaTitleTag = styled.span`
 	margin-left: 42px;
 	transform: scale(0.88);
 `;
+export const ProgressArea = styled.div`
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-direction: column;
+	flex-wrap: nowrap;
+	& > h4 {
+		font-family: 'Mulish', sans-serif;
+		font-size: 22px;
+		font-weight: 600;
+		font-style: italic;
+		color: ${({ theme }) => (theme.title === 'LIGHT' ? '#ff0073' : '#ff0073')};
+		display: inline-block;
+		margin: 0;
+	}
+`;

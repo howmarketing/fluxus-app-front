@@ -26,6 +26,7 @@ const BalancesToken: React.FC = function () {
 		(async () => {
 			if (nearRPCContext.getWallet().isSignedIn()) {
 				const balances = await getTokenBalances();
+				// In progress, so, need to keep this with debugging mark
 				console.log(balances);
 				setBalancesState(balances);
 			}

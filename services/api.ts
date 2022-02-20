@@ -79,6 +79,76 @@ export const getPools = async (counter: number) =>
 			return pools;
 		});
 
+export type IPoolHistoryFiatPrice = {
+	pool_id: string;
+	asset_amount: string;
+	fiat_amount: string;
+	asset_price: string;
+	fiat_price: string;
+	asset_tvl: string;
+	fiat_tvl: string;
+	date: string;
+};
+export const getPoolTvlFiatPriceHistory = async ({ pool_id = 0 }): Promise<Array<IPoolHistoryFiatPrice>> => {
+	const enpointUrl = `https://sodaki.com/api/pool/${pool_id}/tvl`;
+
+	const fetchResponse = await fetch(enpointUrl, {
+		headers: {
+			accept: '*/*',
+			'accept-language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+			'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="98", "Google Chrome";v="98"',
+			'sec-ch-ua-mobile': '?0',
+			'sec-ch-ua-platform': '"macOS"',
+			'sec-fetch-dest': 'empty',
+			'sec-fetch-mode': 'cors',
+			'sec-fetch-site': 'cross-site',
+		},
+		referrerPolicy: 'strict-origin-when-cross-origin',
+		body: null,
+		method: 'GET',
+		mode: 'cors',
+		credentials: 'omit',
+	});
+
+	return fetchResponse.json();
+};
+export interface IPoolFiatPrice {
+	amounts: string[];
+	amp: number;
+	farming: boolean;
+	id: number;
+	pool_kind: string;
+	shares_total_supply: string;
+	token0_ref_price: string;
+	token_account_ids: string[];
+	token_symbols: string[];
+	total_fee: number;
+	tvl: number;
+	shareSupply: any;
+}
+export const getPoolTvlFiatPrice = async ({ pool_id = 0 }): Promise<IPoolFiatPrice> => {
+	const enpointUrl = `https://dev-indexer.ref-finance.com/get-pool?pool_id=${pool_id}`;
+
+	const fetchResponse = await fetch(enpointUrl, {
+		headers: {
+			accept: '*/*',
+			'accept-language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+			'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="98", "Google Chrome";v="98"',
+			'sec-ch-ua-mobile': '?0',
+			'sec-ch-ua-platform': '"macOS"',
+			'sec-fetch-dest': 'empty',
+			'sec-fetch-mode': 'cors',
+			'sec-fetch-site': 'cross-site',
+		},
+		referrerPolicy: 'strict-origin-when-cross-origin',
+		body: null,
+		method: 'GET',
+		mode: 'cors',
+		credentials: 'omit',
+	});
+
+	return fetchResponse.json();
+};
 export const getUserWalletTokens = async (): Promise<any> =>
 	await fetch(`${config.helperUrl}/account/${getWallet().getAccountId()}/likelyTokens`, {
 		method: 'GET',

@@ -13,7 +13,6 @@ function usePersistedState<T>(key: string, initialState: T): Response<T> {
 		if (typeof window !== 'undefined') {
 			const storageValue = localStorage.getItem(key);
 			if (storageValue) {
-				// console.log(`Returning already storaded value for ${key}`);
 				return {
 					keyAlreadyStorade: true,
 					stateKey: key,
@@ -21,7 +20,6 @@ function usePersistedState<T>(key: string, initialState: T): Response<T> {
 					DOMLoaded: true,
 				};
 			}
-			// console.log(`Returning like not storaded value for ${key}`);
 			return {
 				keyAlreadyStorade: false,
 				stateKey: key,
@@ -41,7 +39,6 @@ function usePersistedState<T>(key: string, initialState: T): Response<T> {
 
 	useEffect(() => {
 		if (settedPersistedState.DOMLoaded && !settedPersistedState.keyAlreadyStorade) {
-			// console.log(`Storage value changed for ${key}`);
 			try {
 				const stateAsJson = JSON.stringify(state);
 				localStorage.setItem(key, stateAsJson);

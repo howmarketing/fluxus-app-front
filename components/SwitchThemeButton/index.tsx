@@ -21,7 +21,6 @@ export function applySystemPrefersColorSchemeToTheme(setThemeContextFunction: (t
 	 * @param { MediaQueryListEvent | any } ev
 	 */
 	const changeThemeByUserSystemPrefersColorScheme = (ev: MediaQueryListEvent) => {
-		console.log('MediaQueryListEvent: ', ev);
 		const systemPrefersColorScheme: MediaQueryList = window?.matchMedia('(prefers-color-scheme: dark)');
 		setThemeContextFunction(systemPrefersColorScheme?.matches ? 'DARK' : 'LIGHT');
 	};
@@ -55,7 +54,6 @@ export function applySystemPrefersColorSchemeToTheme(setThemeContextFunction: (t
 			 * IF USER PREFERS IT IS NOT SETTED YET, USE THE CONTEXT FUNCTION TO APPLY THAT THEME
 			 */
 			if (!userStoradedPrefersColorScheme) {
-				console.log(`Setting theme by user system prefers colors scheme (${userColorScheme}).`);
 				userStorage.setItem(USER_SYSTEM_PREFERS_COLOR_SCHEME, userColorScheme);
 				setThemeContextFunction(userColorScheme);
 				return;
@@ -67,6 +65,7 @@ export function applySystemPrefersColorSchemeToTheme(setThemeContextFunction: (t
 			console.log({ user_scheme_already_setted: userStoradedPrefersColorScheme });
 		}
 	} catch (e: any) {
+		// Error log
 		console.log({
 			'applySystemPrefersColorSchemeToTheme(ERROR): ':
 				e?.message || 'Unknow error when try to set correspondent user system scheme to the application theme.',

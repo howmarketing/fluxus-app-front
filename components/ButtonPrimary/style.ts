@@ -15,13 +15,14 @@ export const ButtonPrimaryStyled = styled.button<IButton>`
 	background-image: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0)),
 		linear-gradient(101deg, #00f5cc, #00f5cc) !important;
 	background-origin: border-box;
-	box-shadow: 2px 1000px 1px #00f5cc inset;
+	box-shadow: 1px 1000px 1px #048d75 inset;
+	border: solid 1px transparent;
 	color: #f8f8f9;
 	font-family: Mulish;
 	font-size: 1.1rem;
 	font-weight: 600;
 	text-transform: none;
-	text-shadow: 1px 1px 7.5px #000000c7;
+	text-shadow: 1px 1px 7.5px #00000030;
 	outline: none;
 	filter: none;
 
@@ -48,6 +49,12 @@ export const ButtonPrimaryStyled = styled.button<IButton>`
 		background-image: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0)),
 			linear-gradient(101deg, #f43085, #7623f5) !important;
 	}
+	&:disabled {
+		cursor: not-allowed;
+		background-image: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0)),
+			linear-gradient(101deg, #565656, #565656) !important;
+		box-shadow: 1px 1000px 1px #565656 inset;
+	}
 `;
 
 export const ButtonPrimaryStyledAsDark = styled(ButtonPrimaryStyled)`
@@ -55,7 +62,8 @@ export const ButtonPrimaryStyledAsDark = styled(ButtonPrimaryStyled)`
 	background-image: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0)),
 		linear-gradient(101deg, #00f5cc, #00f5cc) !important;
 	background-origin: border-box;
-	box-shadow: 2px 1000px 1px #00f5cc inset;
+	box-shadow: 1px 1000px 1px #048d75 inset;
+	border: solid 1px transparent;
 	color: #f8f8f9;
 	&:hover {
 		color: #f8f8f9;
@@ -76,5 +84,11 @@ export const ButtonPrimaryStyledAsDark = styled(ButtonPrimaryStyled)`
 		color: #f8f8f9;
 		background-image: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0)),
 			linear-gradient(101deg, #f43085, #7623f5) !important;
+	}
+	&:disabled {
+		cursor: not-allowed;
+		background-image: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0)),
+			linear-gradient(101deg, #565656, #565656) !important;
+		box-shadow: 1px 1000px 1px #565656 inset;
 	}
 `;

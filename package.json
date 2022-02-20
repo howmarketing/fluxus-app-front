@@ -6,7 +6,7 @@
     "scripts": {
         "dev": "next dev",
         "build": "next build",
-		"export": "next build && next export",
+        "export": "next build && next export",
         "start": "next start",
         "lint": "next lint",
         "format": "prettier --write \"**/*.{ts,js}\""
@@ -24,7 +24,7 @@
         "lzutf8": "^0.6.0",
         "mathjs": "^10.0.0",
         "moment": "^2.29.1",
-        "near-api-js": "^0.43.1",
+        "near-api-js": "0.44.2",
         "next": "12.0.4",
         "next-compose-plugins": "^2.2.1",
         "next-images": "^1.8.2",
@@ -43,6 +43,7 @@
         "react-tooltip": "^4.2.21",
         "recharts": "^2.1.8",
         "styled-components": "^5.3.3",
+        "web3": "^1.7.0",
         "webpack": "^5.65.0"
     },
     "devDependencies": {

@@ -5,7 +5,7 @@ export const defaultMetaDescribes = {
 	title: 'Fluxus Finance | ',
 	description: 'Fluxus Finance - ',
 	heywords: 'Fluxus Finance, ',
-	sharedOgImage: 'https://static.arizapp.com.br/images/default-banner.jpg',
+	sharedOgImage: 'bg-home-min.jpg',
 };
 /**
  * @description It is the homepage meta informations

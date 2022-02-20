@@ -144,23 +144,14 @@ export const CardRewards: React.FC<CardRewardsProps> = function ({ ...props }) {
 									if (!nearRPCContext.getWallet().isSignedIn()) {
 										nearRPCContext
 											.getWallet()
-											.requestSignIn(
-												nearRPCContext.config.REF_FI_CONTRACT_ID,
-												'Fluxus app',
-												undefined,
-												undefined,
-											);
+											.requestSignIn(nearRPCContext.config.REF_FARM_CONTRACT_ID);
 									} else {
 										(async () => {
 											if (props?.seedData?.seed_id) {
-												// const unclaimedReward = await getUnclaimedReward(props.seedData.);
-												const claimed = await claimRewardBySeed(props.seedData.seed_id).catch(
-													(err: any) => {
-														console.log(err);
-														// alert('Claim Rewards by seed Failed');
-													},
-												);
-												console.log('Claimed: ', claimed);
+												await claimRewardBySeed(props.seedData.seed_id).catch((err: any) => {
+													// Error log
+													console.log(err);
+												});
 											} else {
 												alert('Could not claim rewards by seed becouse these wasnt provided');
 											}

@@ -210,6 +210,29 @@ export const getTokenBalances = (fluxusContractName = '', debug = false): Promis
 		debug,
 	});
 
+export const getUserTokenBalances = async ({
+	account_id = getWallet().getAccountId(),
+	contract_id = '',
+	debug = false,
+}): Promise<TokenBalancesView> => {
+	const args = { account_id };
+	const methodName = 'get_deposits';
+	if (debug) {
+		console.log('getUserTokenBalances(DEBUG LOG): ', {
+			params: { methodName, args, account_id, fluxusContractName: contract_id, debug },
+		});
+		return {} as TokenBalancesView;
+	}
+	const tokenBalancesViewResponse = await refFiViewFunction({
+		methodName,
+		args,
+		fluxusContractName: contract_id,
+		debug,
+	});
+
+	return { ...tokenBalancesViewResponse } as TokenBalancesView;
+};
+
 export const getTokenBalance = (tokenId: string): Promise<number> =>
 	refFiViewFunction({
 		methodName: 'get_deposit',

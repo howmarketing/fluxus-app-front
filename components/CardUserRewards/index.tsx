@@ -1,19 +1,15 @@
 /* eslint-disable no-alert */
-/* eslint-disable @next/next/no-img-element */
-/* eslint-disable jsx-a11y/anchor-is-valid */
-/* eslint-disable react/jsx-props-no-spreading */
 import React, { useEffect, useState, ButtonHTMLAttributes } from 'react';
 import Switch from 'react-switch';
 import { useNearRPCContext } from '@hooks/index';
 import { toReadableNumber } from '@utils/numbers';
 import { IUserListRewards } from '@workers/workerNearPresets';
 import { ftGetTokenMetadata, TokenMetadata } from '@services/ft-contract';
-import { withdrawAllReward } from '@services/m-token';
 import { nearWalletAsWindow } from '@utils/nearWalletAsWindow';
 import ButtonPrimary from '@components/ButtonPrimary';
 import { IPopulatedReward } from '@components/CardRewards';
-import { getRewards } from '@services/farm';
 import { REF_FARM_CONTRACT_ID } from '@services/near';
+import { INearRPCContext } from '@contexts/nearData/nearRPCData';
 import { CardURewardsStyle, SwitchArea, SwitchAreaTitle, SwitchAreaTitleTag, WrapCenterView } from './style';
 
 export type IUserDeposit = { amount: number | string } & TokenMetadata;
@@ -29,8 +25,10 @@ export const CardUserRewards: React.FC<CardUserRewardsProps> = function ({ ...pr
 	const [userRewardTokensState, setUserRewardTokensState] = useState<Array<IPopulatedReward>>(
 		[] as Array<IPopulatedReward>,
 	);
-	type WCRL = ICheckedRewardsToWithDraw;
-	const [checkedRewardsToWithdrawState, setCheckedRewardsToWithdrawState] = useState<WCRL>([] as WCRL);
+
+	const [checkedRewardsToWithdrawState, setCheckedRewardsToWithdrawState] = useState<ICheckedRewardsToWithDraw>(
+		[] as ICheckedRewardsToWithDraw,
+	);
 
 	const onSelectRewardToWithdraw = (
 		rewardData: IPopulatedReward & { reward_index: number; is_selected: boolean },
@@ -62,7 +60,6 @@ export const CardUserRewards: React.FC<CardUserRewardsProps> = function ({ ...pr
 			};
 			withdrawList.push(newRewardToWithdrawList);
 		}
-		// console.log(`withdraw`, withdrawList);
 		setCheckedRewardsToWithdrawState(withdrawList);
 	};
 
@@ -72,7 +69,6 @@ export const CardUserRewards: React.FC<CardUserRewardsProps> = function ({ ...pr
 			return [] as IUserListDeposits;
 		}
 		const deposits = await nearRPCContext.getNearPresets().get_user_list_deposits();
-		// console.log('card user rewards Deposits:', deposits);
 		const depositAmounts = Object.values(deposits);
 		const depositsPopulated = await Promise.all(
 			Object.keys(deposits).map(async (tokenId: string, index: number) => {
@@ -119,14 +115,11 @@ export const CardUserRewards: React.FC<CardUserRewardsProps> = function ({ ...pr
 	};
 
 	const defineUserRewardListToState = async () => {
-		// const teste = await getRewards({ useFluxusFarmContract: useFluxusFarmContractState });
-		setCheckedRewardsToWithdrawState([] as WCRL);
+		setCheckedRewardsToWithdrawState([] as ICheckedRewardsToWithDraw);
 		const userRewards = await nearRPCContext
 			.getNearPresets()
 			.get_user_list_rewards(undefined, useFluxusFarmContractState);
 		const fomartedRewards = await formatListOfTokenAndValueToRewardList(userRewards);
-		// console.log('TESTE:', teste);
-		// console.log(fomartedRewards);
 		setUserRewardTokensState(fomartedRewards);
 	};
 
@@ -187,6 +180,7 @@ export const CardUserRewards: React.FC<CardUserRewardsProps> = function ({ ...pr
 		</>
 	);
 };
+
 export type IWithdrawReward = Record<string, { index: number; decimals: number; value: string }>;
 export type ICheckedRewardsToWithDraw = Array<IWithdrawReward>;
 
@@ -206,21 +200,20 @@ export const CardURewardsFooter = ({
 
 	const requestWalletConnection = async () => {
 		try {
-			const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC();
-			await windowWalletProvider.getWallet().requestSignIn(REF_FARM_CONTRACT_ID);
+			const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<INearRPCContext>();
+			await windowWalletProvider.getWallet().requestSignIn(nearRPCContext.config.REF_FARM_CONTRACT_ID);
 			const walletResponse = await nearWalletAsWindow.getWalletCallback();
 			if (!walletResponse.success) {
-				console.log(walletResponse);
 				alert(walletResponse.message);
 				return;
 			}
-			console.log('walletResponse: ', walletResponse);
 			try {
 				setTimeout(() => {
 					window.location.href = `${window.location.href}?loggedin=true`;
 				}, 1500);
 			} catch (e: any) {
-				console.log(`Refresh window error.`);
+				// Error log
+				console.log(`Refresh window error.`, e);
 			}
 		} catch (e: any) {
 			window.alert(`${e?.message || 'Unknown wallet sign request error.'}`);
@@ -230,7 +223,7 @@ export const CardURewardsFooter = ({
 	const doWithDraw = async () => {
 		setWithdrawLoadingState(true);
 		const checkedRewardList: IWithdrawReward = {} as IWithdrawReward;
-		const windowWalletProvider = await walletWindow.getWindowWalletRPC();
+		const windowWalletProvider = await walletWindow.getWindowWalletRPC<INearRPCContext>();
 		try {
 			try {
 				checkedRewards.forEach((reward, offset: number) => {
@@ -257,7 +250,6 @@ export const CardURewardsFooter = ({
 			}
 			try {
 				const walletWindowCallback = await walletWindow.getWalletCallback();
-				console.log('walletWindowCallback: ', walletWindowCallback);
 				if (!walletWindowCallback.success) {
 					alert(walletWindowCallback.message);
 				}
@@ -314,7 +306,6 @@ export const CardURewardsFooter = ({
 		const DOMLoaded: boolean = true;
 		(async () => {
 			if (!DOMLoaded) {
-				console.log('Async function can not execut before DOOM be loaded.');
 				return;
 			}
 			setWalletIsSignedState(nearRPCContext.getWallet().isSignedIn());
@@ -346,4 +337,5 @@ export const CardURewardsFooter = ({
 		</div>
 	);
 };
+
 export default CardUserRewards;

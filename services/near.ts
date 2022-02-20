@@ -2,8 +2,9 @@
 import { Near, keyStores, utils } from 'near-api-js';
 import { functionCall } from 'near-api-js/lib/transaction';
 import BN from 'bn.js';
+import AbstractMainWallet from '@ProviderPattern/models/AbstractMainWallet';
 import getConfig from './config';
-import SpecialWallet from './SpecialWallet';
+import ProviderPattern from './ProviderPattern';
 
 const config = getConfig();
 
@@ -24,31 +25,7 @@ export const LP_STORAGE_AMOUNT = '0.01';
 
 export const ONE_YOCTO_NEAR = '0.000000000000000000000001';
 
-const windowExist = () => {
-	try {
-		return typeof window !== 'undefined' && window instanceof Window;
-	} catch (e: any) {
-		console.log(e);
-		return false;
-	}
-};
-
-// export const near = windowExist()
-// 	? new Near({
-// 			keyStore: new keyStores.BrowserLocalStorageKeyStore(),
-// 			...config,
-// 	  })
-// 	: null;
-
-// export const wallet: SpecialWallet = windowExist()
-// 	? new SpecialWallet(near || new Near(config), config.REF_FI_CONTRACT_ID)
-// 	: ({} as SpecialWallet);
-
 export const near = {};
-// new Near({
-// 	keyStore,
-// 	...config,
-// });
 let nearConnection: any = null;
 export const getNear = (): Near => {
 	if (nearConnection !== null) {
@@ -58,14 +35,13 @@ export const getNear = (): Near => {
 	return nearConnection;
 };
 export const wallet = null;
-let walletInstance: any = null;
-export const getWallet = () => {
-	if (walletInstance !== null) {
-		return walletInstance;
-	}
-	walletInstance = new SpecialWallet(getNear(), config.REF_FI_CONTRACT_ID);
-	return walletInstance;
-};
+const walletInstance: any = null;
+export const getWallet = (): AbstractMainWallet => ProviderPattern.getProviderInstance().getWallet();
+// if (walletInstance !== null) {
+// 	return walletInstance;
+// }
+// walletInstance = new SpecialWallet(getNear(), config.REF_FI_CONTRACT_ID);
+// return walletInstance;
 
 export const getGas = (gas: string) => (gas ? new BN(gas) : new BN('100000000000000'));
 
@@ -112,14 +88,14 @@ export const refFiViewFunction = ({
 		console.log('receiverContractId: ', receiverContractId);
 	}
 	if (!getWallet().isSignedIn()) {
-		return {} as any;
+		// return { error: 'no user logged in' } as any;
 	}
 	return getWallet().account().viewFunction(receiverContractId, methodName, args);
 };
 
 export const refFiManyFunctionCalls = (functionCalls: RefFiFunctionCallOptions[]) => {
 	if (!getWallet().isSignedIn()) {
-		return {} as any;
+		return { error: 'no user logged in' } as any;
 	}
 	const actions = functionCalls.map(fc =>
 		functionCall(fc.methodName, fc?.args || {}, getGas(`${fc?.gas || ''}`), getAmount(`${fc?.amount || ''}`)),
@@ -135,7 +111,7 @@ export interface Transaction {
 
 export const executeMultipleTransactions = async (transactions: Transaction[], callbackUrl?: string) => {
 	if (!getWallet().isSignedIn()) {
-		return {} as any;
+		return { error: 'no user logged in' } as any;
 	}
 	const nearTransactions = await Promise.all(
 		transactions.map((t, i) =>
@@ -165,14 +141,7 @@ export const refFarmFunctionCall = ({
 	useFluxusFarmContract = false,
 }: RefFiFunctionCallOptions) => {
 	const farmContract = useFluxusFarmContract ? FLUXUS_FARM_CONTRACT_ID : REF_FARM_CONTRACT_ID;
-	console.log({
-		account: getWallet().account(),
-		farmContract,
-		methodName,
-		args,
-		gas: getGas(gas || '0'),
-		amount: getAmount(amount || '0'),
-	});
+
 	return getWallet()
 		.account()
 		.functionCall(farmContract, methodName, args, getGas(`${gas || ''}`), getAmount(`${amount || ''}`));
@@ -184,7 +153,7 @@ export const refFarmViewFunction = async ({
 	useFluxusFarmContract = false,
 }: RefFiViewFunctionOptions & { useFluxusFarmContract?: boolean }) => {
 	if (!getWallet().isSignedIn()) {
-		return {} as any;
+		// return {} as any;
 	}
 	const farmContract = useFluxusFarmContract ? FLUXUS_FARM_CONTRACT_ID : REF_FARM_CONTRACT_ID;
 	const params = { useFluxusFarmContract, farmContract, methodName, args };

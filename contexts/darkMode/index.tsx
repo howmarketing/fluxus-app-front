@@ -2,12 +2,14 @@
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 import React, { createContext, useEffect, useState, ReactElement, useMemo } from 'react';
 import { DefaultTheme, ThemeProvider } from 'styled-components';
-import { KEY_LOCAL_STORAGE_THEME } from 'consts';
+import { ToastContainer } from 'react-toastify';
 import { usePersistedState } from 'hooks';
+import { KEY_LOCAL_STORAGE_THEME } from 'consts';
 import { WalletProvider } from '@contexts/useWallet/index';
 import { NearDataProvider } from '@contexts/nearData';
 
 import { dark, light } from 'styles/themes';
+import 'react-toastify/dist/ReactToastify.css';
 
 export type IDarkModeContext = {
 	toggleTheme: () => void;
@@ -47,6 +49,18 @@ export const DarkModeProvider: React.FC = function ({ children }) {
 			<ThemeProvider theme={theme}>
 				<WalletProvider>
 					<NearDataProvider>
+						<ToastContainer
+							position="top-right"
+							autoClose={18000}
+							hideProgressBar={false}
+							newestOnTop
+							closeOnClick
+							rtl={false}
+							pauseOnFocusLoss
+							draggable
+							pauseOnHover
+							style={{ zIndex: '999999999999' }}
+						/>
 						<Modal
 							header={modalProps?.header || undefined}
 							content={modalProps?.content || undefined}

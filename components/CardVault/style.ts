@@ -70,7 +70,7 @@ export const CardVaultAreaStyled = styled.div<ICard>`
 		max-width: calc(100% - 32px);
 	}
 	background-color: ${({ theme }) => (theme.title === 'LIGHT' ? '#fcfcfc' : '#121212')};
-	border-radius: 6px;
+	border-radius: 8px;
 	margin: 12px 0;
 	overflow: hidden;
 	box-shadow: 7px 7px 25px ${({ theme }) => (theme.title === 'LIGHT' ? 'rgba(98, 209, 180, 0.3)' : '#00000054')};

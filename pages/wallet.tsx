@@ -8,6 +8,7 @@ import { useNearRPCContext } from '@hooks/index';
 // import NearLogo from '@public/near-logo.png';
 import ButtonPrimary from '@components/ButtonPrimary';
 import { withdrawAllReward } from '@services/m-token';
+import ProviderPattern from '@services/ProviderPattern';
 
 const wallet: NextPage = function () {
 	const nearRPCContext = useNearRPCContext();
@@ -17,6 +18,10 @@ const wallet: NextPage = function () {
 		try {
 			Object.defineProperty(window, 'nearRPC', { value: nearRPCContext, writable: true });
 			console.log('Window property nearRPCContext setted: ', nearRPCContext);
+
+			const providerPattern = ProviderPattern.getInstance();
+			Object.defineProperty(window, 'providerPattern', { value: providerPattern, writable: true });
+			console.log('Window property providerPattern setted: ', providerPattern);
 		} catch (e: any) {
 			console.error(e);
 		}
@@ -44,16 +49,24 @@ const wallet: NextPage = function () {
 				console.error(e);
 			}
 		}, 2000);
+		return waitingForOpnerFunction;
 	};
 
 	useEffect(() => {
+		// eslint-disable-next-line no-undef
+		let waitingForOpnerFunction: NodeJS.Timer;
 		const DOMLoaded = true;
 		(async () => {
 			if (DOMLoaded) {
 				await defineWindowProperties();
-				executeOpnerFunction();
+				waitingForOpnerFunction = executeOpnerFunction();
 			}
 		})();
+		return () => {
+			if (waitingForOpnerFunction) {
+				clearInterval(waitingForOpnerFunction);
+			}
+		};
 	}, []);
 
 	return (

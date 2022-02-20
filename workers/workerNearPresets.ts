@@ -63,6 +63,7 @@ const farmView = ({
 			});
 		return result;
 	} catch (e: any) {
+		// Error log
 		console.log('WorkerNearPresets->farmView:error', `${e?.message || 'unknown error'}`);
 		console.log('Query Props: ', { ...queryProps, args });
 		console.error(e);
@@ -90,20 +91,24 @@ export const getPools = (page: number) => {
 	});
 };
 
-interface PoolVolumes {
+export type PoolVolumes = {
 	[tokenId: string]: { input: string; output: string };
-}
+};
 
 export interface Pool {
-	id: number;
-	token_account_ids: string[];
-	supplies: { [key: string]: string };
-	fee: number;
 	shareSupply: string;
-	tvl: number;
+	amounts: string[];
+	amp: number;
+	farming: boolean;
+	id: number;
+	pool_kind: string;
+	shares_total_supply: string;
 	token0_ref_price: string;
+	token_account_ids: string[];
+	token_symbols: string[];
+	total_fee: number;
+	tvl: number;
 }
-
 export type PoolDetails = Pool & { volumes: PoolVolumes };
 
 export const getPoolDetails = async (id: number, useFluxusFarmContract = false): Promise<PoolDetails> =>
@@ -206,7 +211,6 @@ export const getUserListRewards = async (
 ): Promise<IUserListRewards> => {
 	const useAccountID =
 		accountID || (getWallet().isSignedIn() ? getWallet().getAccountId() : config.REF_FARM_CONTRACT_ID);
-	// console.log('List Reward Accound ID: ', useAccountID);
 	return farmView({
 		methodName: 'list_rewards',
 		args: {

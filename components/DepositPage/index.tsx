@@ -67,13 +67,12 @@ const BalancesToken: React.FC = function () {
 					total_user_reward_value: rewardForToken,
 				};
 
-				console.log('Register token: ', tokenID);
-				console.log('tokenData: ', tokenData);
 				await new Promise<boolean>((resolve, reject) => {
 					setTimeout(() => {
 						resolve(true);
 					}, 20000);
 				});
+				// In progress, keep it
 				// Invoke method storage_deposit from token contract to user logged account do a min amount deposit to token account (Token get back this near amount after registration ibecouse of registration_only arguments as true).
 				// await ftRegisterExchange(tokenID);
 				// registerTokenAndExchange(tokenID);

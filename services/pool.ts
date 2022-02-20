@@ -184,22 +184,24 @@ export const getPoolDetails = async (id: number): Promise<PoolDetails> => {
 
 export const getPoolVolumes = async (id: number): Promise<PoolVolumes> => (await getPoolDetails(id)).volumes;
 
-export const getSharesInPool = (id: number): Promise<string> => {
+export const getSharesInPool = ({ pool_id = 0, accountId = getWallet().getAccountId() }): Promise<string> => {
 	const returnEmpty = async (): Promise<string> => '0';
 	if (!getWallet().isSignedIn()) {
 		return returnEmpty();
 	}
 	try {
 		const execRefViewFunction = async (): Promise<string> => {
-			const result = await refFiViewFunction({
+			const params = {
 				methodName: 'get_pool_shares',
-				args: { pool_id: id, account_id: getWallet().getAccountId() },
-			});
+				args: { pool_id, account_id: accountId },
+			};
+			const result = await refFiViewFunction(params);
 			return result;
 		};
 		const result = execRefViewFunction();
 		return result;
 	} catch (e: any) {
+		// Error log
 		console.log(`getSharesInPool error:`, `${e?.message || 'unknown error'}`);
 		return returnEmpty();
 	}

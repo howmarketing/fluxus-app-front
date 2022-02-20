@@ -1,23 +1,28 @@
-/* eslint-disable no-alert */
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
-/* eslint-disable arrow-body-style */
-/* eslint-disable react/destructuring-assignment */
+/* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable react/no-array-index-key */
 /* eslint-disable @next/next/no-img-element */
-/* eslint-disable jsx-a11y/label-has-associated-control */
+/* eslint-disable no-alert */
 import React, { ReactChild, ReactElement, useEffect, useState, HTMLAttributes, ChangeEvent } from 'react';
 import Img from 'next/image';
+import ToastNotify, { dispatchToastNotify, IToastFyProps } from '@components/ToastNotify';
+import {
+	ErrorOutline as ErrorIcon,
+	WarningOutlined as WarningIcon,
+	InfoOutlined as InfoIcon,
+	CheckBox as SuccessIcon,
+} from '@material-ui/icons';
 import { IDarkModeContext } from '@contexts/darkMode';
 import { useDarkMode, useNearRPCContext } from '@hooks/index';
 import { toNonDivisibleNumber, toReadableNumber } from '@utils/numbers';
-import { nearWalletAsWindow } from '@utils/nearWalletAsWindow';
+import { ICallbackData, nearWalletAsWindow } from '@utils/nearWalletAsWindow';
 import { getMftTokenId } from '@utils/token';
 import { IFarmData as IVaultData } from '@workers/workerNearPresets';
 import { unstake } from '@services/m-token';
 import { getRewardByTokenId, getUnclaimedReward } from '@services/farm';
 import { TokenMetadata } from '@services/ft-contract';
-import CardRewards, { IPopulatedReward } from '@components/CardRewards';
+import { IPopulatedReward } from '@components/CardRewards';
 import { IPopulatedSeed } from '@components/VaultList';
 import ButtonPrimary from '@components/ButtonPrimary';
 import ButtonGhost from '@components/ButtonGhost';
@@ -25,6 +30,13 @@ import uxusIcon from '@assets/app/uxus.svg';
 import WhatThisMeanIcon from '@assets/app/what-this-mean-white-icon.svg';
 import PolygonIcon from '@assets/app/polygon.svg';
 import NearIcon from '@assets/app/nearIcon.svg';
+import { INearRPCContext } from '@contexts/nearData/nearRPCData';
+import { getWallet } from '@services/near';
+import ProviderPattern from '@services/ProviderPattern';
+import AbstractMainVaultProviderActions from '@ProviderPattern/models/Actions/AbstractMainVaultProviderActions';
+import AbstractMainProvider from '@ProviderPattern/models/AbstractMainProvider';
+import MainProvider from '@ProviderPattern/models/MainProvider';
+import { makeWait } from '@utils/returns';
 import {
 	CardVaultAreaStyled,
 	CardContainerStyled,
@@ -32,7 +44,6 @@ import {
 	CardHeaderCoinPairsIcon,
 	CardHeaderCoinPairsLabel,
 	CardBodyEarnings,
-	CardHeaderMultiplier,
 	CardHeaderTotalDeposited,
 	CardHeaderAPYX,
 	CardHeaderDropDown,
@@ -67,8 +78,6 @@ export type ICardVaultProps = HTMLAttributes<HTMLDivElement> & ICardVaultState;
 
 export const CardVault = (props: ICardVaultProps): ReactElement => {
 	const { populatedSeed, useFluxusVaultContract } = props;
-	const [useFluxusVaultContractState, setUseFluxusVaultContractState] = useState<boolean>(false);
-	const [cardToggleState, setCardToggleState] = useState<'opened' | 'closed'>('closed');
 	const [tabActivedState, setTabActivedState] = useState<number>(0);
 
 	const TabsHeader = (props: { populatedSeed: IPopulatedSeed; activedTabIndex: number }) => {
@@ -85,9 +94,6 @@ export const CardVault = (props: ICardVaultProps): ReactElement => {
 			/>
 		);
 	};
-	useEffect(() => {
-		setUseFluxusVaultContractState(typeof useFluxusVaultContract !== 'undefined' ? useFluxusVaultContract : false);
-	}, []);
 	return (
 		<CardVaultAreaStyled {...props} title={getCardTitle(populatedSeed)} data-componentname="CardVaultAreaStyled">
 			<CardHeader data-componentname="CardHeader">
@@ -115,7 +121,6 @@ export const CardVault = (props: ICardVaultProps): ReactElement => {
 							isActive={tabActivedState === 0}
 							useFluxusVaultContract={useFluxusVaultContract || false}
 						/>
-
 						<DisplayerCardBodyTabBodyForInfo
 							populatedSeed={populatedSeed}
 							isActive={tabActivedState === 1}
@@ -144,7 +149,7 @@ export const CardVaultRewardFooter = ({ ...FooterProps }: ICardVaultRewardFooter
 	const themeProvided = useDarkMode();
 	const nearRPCContext = useNearRPCContext();
 	const { populatedSeed, useFluxusVaultContract, loadCardRewards, setStateRewardsIsLoading } = FooterProps;
-	const total_staked = typeof populatedSeed.user_staked_amount !== `undefined` ? populatedSeed.user_staked_amount : 0;
+	const total_staked = typeof populatedSeed.user_shares !== `undefined` ? populatedSeed.user_shares : 0;
 	const total_lptoken =
 		typeof populatedSeed.pool.shares_lptoken !== `undefined` ? populatedSeed.pool.shares_lptoken : 0;
 	const { seed_id } = populatedSeed;
@@ -155,18 +160,16 @@ export const CardVaultRewardFooter = ({ ...FooterProps }: ICardVaultRewardFooter
 			if (typeof setStateRewardsIsLoading === 'function') {
 				setStateRewardsIsLoading(true);
 			}
-			const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC();
-			const claimed = await windowWalletProvider
+			const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<INearRPCContext>();
+			await windowWalletProvider
 				.getNearPresets()
 				.claime_user_rewards_by_seed(seed_id, useFluxusVaultContract)
 				.catch((err: any) => {
+					// Error log
 					console.log('claimAllVaultedRewardTokens:(error) ', err?.message || 'unknown error');
 				});
-			console.log(`Successfully Claimed rewards for the seed id ${seed_id} `, claimed);
 			const walletResponse = await nearWalletAsWindow.getWalletCallback(30000);
-			console.log('walletResponse: ', walletResponse);
 			if (!walletResponse.success) {
-				console.log(walletResponse);
 				window.alert(walletResponse.message);
 			}
 			if (typeof loadCardRewards === 'function') {
@@ -183,7 +186,7 @@ export const CardVaultRewardFooter = ({ ...FooterProps }: ICardVaultRewardFooter
 	// Button component for unstake from the farm the user staked lptokens
 	const UnstakeButton = ({ ...props }: { populatedSeed: IPopulatedSeed }) => {
 		const { populatedSeed } = props;
-		const total_staked = populatedSeed?.user_staked_amount || 0;
+		const total_staked = populatedSeed?.user_shares || 0;
 		return (
 			<ButtonGhost
 				disabled={!total_staked}
@@ -224,6 +227,16 @@ export const CardVaultRewardFooter = ({ ...FooterProps }: ICardVaultRewardFooter
 		);
 	};
 
+	const openModalToStakeToVault = async () => {
+		const { balance_details } = await getWallet().account().getBalance();
+		openModalStake({
+			themeProvided,
+			populatedSeed,
+			total_available_to_staked: balance_details.available,
+			useFluxusVaultContract: useFluxusVaultContract || true,
+		});
+	};
+
 	// Button component for stake user lptokens for the farm
 	const StakeButton = ({ ...props }: { total_lptoken: number; seed_id: string }) => {
 		const { total_lptoken } = props;
@@ -240,12 +253,7 @@ export const CardVaultRewardFooter = ({ ...FooterProps }: ICardVaultRewardFooter
 				}}
 				onClick={ev => {
 					if (`${total_lptoken}`.length > 0 && `${total_lptoken}` !== '0') {
-						openModalStake({
-							themeProvided,
-							populatedSeed,
-							total_available_to_staked: total_lptoken,
-							useFluxusVaultContract: useFluxusVaultContract || false,
-						});
+						openModalToStakeToVault();
 					}
 				}}>
 				Stake{' '}
@@ -304,7 +312,7 @@ export const CardVaultRewardFooter = ({ ...FooterProps }: ICardVaultRewardFooter
 				padding: '12px',
 			}}
 			onClick={() => {
-				nearRPCContext.getWallet().requestSignIn();
+				nearRPCContext.getWallet().requestSignIn(nearRPCContext.config.REF_FARM_CONTRACT_ID);
 			}}>
 			Connect wallet
 		</ButtonPrimary>
@@ -354,9 +362,11 @@ export const formatMoneyWithShortName = (amount: string) => {
 				: shortValueCount >= 2
 				? 'K'
 				: '';
-		return `${shortValueParts.slice(0, 1).join('')}${
+		const shortValueFormatted = `${shortValueParts.slice(0, 1).join('')}${
 			shortValueCount < 2 ? '' : `.${shortValueParts.slice(1, 2).join('').substring(0, 1)}`
 		}${shortValueName}`;
+		if (shortValueFormatted === 'NaN') return '0';
+		return shortValueFormatted;
 	} catch (e: any) {
 		console.error(e);
 		return amount;
@@ -478,11 +488,9 @@ export const DisplayerVaultTotalUnClaimedReward = (props: { populatedSeed: IPopu
 
 export const DisplayerVaultTotalDeposited = (props: { populatedSeed: IPopulatedSeed }) => {
 	const { populatedSeed } = props;
-	const tvl = toReadableNumber(`${populatedSeed.min_deposit}`.length, populatedSeed.amount);
-	const tvlNumber = Number(tvl);
 	return (
 		<CardHeaderTotalDeposited data-componentname="CardHeaderTotalDeposited" title="Card Header Total value locked">
-			<span>$ {formatMoneyWithShortName(formatMoney(tvlNumber))}</span>
+			<span>$ {formatMoneyWithShortName(formatMoney(Number(populatedSeed.vault.user.shares_tvl)))}</span>
 			<label htmlFor="Deposited">Deposited</label>
 		</CardHeaderTotalDeposited>
 	);
@@ -542,7 +550,258 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 	isActive: boolean;
 	useFluxusVaultContract: boolean;
 }) => {
+	const themeProvided = useDarkMode();
 	const { populatedSeed, isActive, useFluxusVaultContract } = props;
+	const vaultIsEnabled = () => `${populatedSeed.pool_id}` === `193`;
+
+	// Get provider from window wallet
+	const getProviderFromWindowWallet = async (msTime?: number | undefined) => {
+		nearWalletAsWindow._makeItWaitBeforeClose = msTime && msTime >= 500 ? msTime : 500;
+		const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<ProviderPattern>(true);
+		return windowWalletProvider.getProvider();
+	};
+	// Get vault actions from provider as window wallet
+	const getVaultActionsFromProviderAsWindow = async (
+		msTime?: number | undefined,
+	): Promise<{ actions: AbstractMainVaultProviderActions; provider: AbstractMainProvider & MainProvider }> => {
+		const provider = await getProviderFromWindowWallet(msTime);
+		return { actions: provider.getProviderActions().getVaultActions(), provider };
+	};
+
+	// Get provider Instance
+	const getProvider = () => ProviderPattern.getProviderInstance();
+	// Get Vault actions instance from provider instance
+	const getVaultActions = () => getProvider().getProviderActions().getVaultActions();
+
+	// LOGIN TO VAULT CONTRACT
+	const signInToVaultContract = async (): Promise<void> => {
+		try {
+			nearWalletAsWindow._makeItWaitBeforeClose = 4000;
+			const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<ProviderPattern>(true);
+			const provider = windowWalletProvider.getProvider();
+			await provider.getWallet().requestSignIn({
+				contractId: provider.getProviderConfigData().FLUXUS_VAULT_CONTRACT_ID,
+				methodNames: [],
+			});
+			const walletResponse = await nearWalletAsWindow.getWalletCallback();
+			if (!walletResponse.success) {
+				ToastNotify({ title: walletResponse.message, Icon: ErrorIcon });
+				return;
+			}
+			try {
+				window.document.querySelectorAll('body')[0].style.opacity = '0.3';
+				setTimeout(() => {
+					window.location.href = `${window.location.href}?loggedin=true`;
+				}, 2500);
+			} catch (e: any) {
+				// Error log
+				console.error(e);
+				ToastNotify({ title: 'Refresh window error.', Icon: ErrorIcon });
+			}
+		} catch (e: any) {
+			console.error(e);
+			ToastNotify({ title: 'Unknown wallet sign request error.', Icon: ErrorIcon });
+		}
+	};
+
+	// Open model to stake near with vault contract
+	const openModalToStakeToVault = async () => {
+		const { balance_details } = await getWallet().account().getBalance();
+		openModalStake({
+			themeProvided,
+			populatedSeed,
+			total_available_to_staked: balance_details.available,
+			useFluxusVaultContract,
+		});
+	};
+
+	// Get balance amount storage into vault contract
+	const getVaultStorageBalanceOf = async (): Promise<{ available: string; total: string }> => {
+		const account_id = getWallet().getAccountId();
+		return ProviderPattern.getProviderInstance()
+			.getProviderActions()
+			.getVaultActions()
+			.execVaultContractAsViewFunction({ methodName: 'storage_balance_of', args: { account_id } });
+	};
+
+	// WITHDRAW ALL
+	const withdrawAll = async (): Promise<ICallbackData & { toast: IToastFyProps }> => {
+		const response: ICallbackData & { toast: IToastFyProps } = {
+			success: true,
+			message: 'Step 1/3 (Withdraw LP from Vault started)',
+			data: {},
+			toast: {},
+			executionsCount: 0,
+			finished: true,
+			finishedTime: 0,
+			totalExecutionTime: 0,
+		};
+		try {
+			response.data = await getVaultActions().withdrawAllUserStakedLP<{}>({});
+			return response;
+		} catch (e: any) {
+			response.success = false;
+			response.message = e?.message || 'Unknow error to Withdraw LP from vault';
+			response.toast = { Icon: ErrorIcon, title: 'Unknow error to Withdraw LP from vault' };
+			return response;
+		}
+	};
+
+	// WITHDRAW ALL 2
+	const withdrawAll2 = async (): Promise<ICallbackData & { toast: IToastFyProps }> => {
+		const response: ICallbackData & { toast: IToastFyProps } = {
+			success: true,
+			message: 'Step 2/3 (Withdraw Reward Tokens from vault started)',
+			data: {},
+			toast: {},
+			executionsCount: 0,
+			finished: true,
+			finishedTime: 0,
+			totalExecutionTime: 0,
+		};
+		try {
+			const provider = await getVaultActionsFromProviderAsWindow();
+			const vaultActions = provider.actions;
+			vaultActions.withdrawAllUserLiquidityPool({});
+			const walletResponse = await nearWalletAsWindow.getWalletCallback();
+			await makeWait(2000);
+			response.data = walletResponse || {};
+			return response;
+		} catch (e: any) {
+			response.success = false;
+			response.message = e?.message || 'Unknow error to Withdraw Reward Tokens';
+			response.toast = { Icon: ErrorIcon, title: 'Unknow error to Withdraw Reward Tokens' };
+			return response;
+		}
+	};
+
+	// STORAGE WITHDRAW
+	const storageWithdraw = async ({ amount = '1' }): Promise<ICallbackData & { toast: IToastFyProps }> => {
+		const response: ICallbackData & { toast: IToastFyProps } = {
+			success: true,
+			message: 'Step 3/3 (Withdraw Near amount from vault started)',
+			data: {},
+			toast: {},
+			executionsCount: 0,
+			finished: true,
+			finishedTime: 0,
+			totalExecutionTime: 0,
+		};
+		try {
+			const provider = await getVaultActionsFromProviderAsWindow();
+			const vaultActions = provider.actions;
+			await vaultActions.withdrawUserStorage({});
+			const walletResponse = await nearWalletAsWindow.getWalletCallback();
+			response.data = walletResponse || {};
+			return response;
+		} catch (e: any) {
+			console.error(e);
+			response.success = false;
+			response.message = e?.message || 'Unknow error to storage withdraw';
+			response.toast = { Icon: ErrorIcon, title: 'Unknow error to storage withdraw' };
+			return response;
+		}
+	};
+
+	const batchTransactionWithdrawAllUserLiquidityPoolAndStorage = async ({
+		amount = '1000000000000000000000000',
+	}): Promise<ICallbackData & { toast: IToastFyProps }> => {
+		const response: ICallbackData & { toast: IToastFyProps } = {
+			success: true,
+			message: 'Step 2..3/3 (Withdraw Reward Tokens from vault started)',
+			data: {},
+			toast: {},
+			executionsCount: 0,
+			finished: true,
+			finishedTime: 0,
+			totalExecutionTime: 0,
+		};
+		try {
+			const provider = await getVaultActionsFromProviderAsWindow();
+			const vaultActions = provider.actions;
+			vaultActions.batchTransactionWithdrawAllUserLiquidityPoolAndStorage({ amount });
+			const walletResponse = await nearWalletAsWindow.getWalletCallback();
+			response.data = walletResponse || {};
+			return response;
+		} catch (e: any) {
+			response.success = false;
+			response.message = e?.message || 'Unknow error to Withdraw Reward Tokens';
+			response.toast = { Icon: ErrorIcon, title: 'Unknow error to Withdraw Reward Tokens' };
+			return response;
+		}
+	};
+
+	const doWithdrawAll = async () => {
+		// DEBUG - Dev debug helper
+		const consoleLogToMe = (step: number, stepName: string, data: any, totalSteps: number = 3) => {
+			const title = `step ${stepName} (${step}/${totalSteps})`;
+			console.log(`========== Stake ${title} Start ==========`);
+			console.log(title, data);
+			console.log(`========== Stake ${title} End ==========`);
+		};
+
+		// DEBUG - Dev debug balance helper
+		const getLogForUserBalanceFromVault = async () => {
+			const balance = await getVaultStorageBalanceOf();
+			consoleLogToMe(0, 'User Vault Balance', balance, 0);
+		};
+
+		// DEBUG - Get Log balance of account in VAULT
+		getLogForUserBalanceFromVault();
+
+		// Withdraw_all (step 1/3)
+		// UX notifyer
+		dispatchToastNotify({ title: 'Step 1/3 (Withdraw LP from vault started)', Icon: SuccessIcon });
+		const withdrawAllResponse = await withdrawAll();
+		consoleLogToMe(1, 'withdrawAllResponse', withdrawAllResponse);
+		if (!withdrawAllResponse.success) {
+			dispatchToastNotify({
+				Icon: withdrawAllResponse.toast?.Icon || ErrorIcon,
+				title: withdrawAllResponse.toast?.title || withdrawAllResponse.message,
+			});
+			return 'Cant process withdraw all';
+		}
+
+		// Withdraw_all2 (step 2/3)
+		// UX notifyer
+		dispatchToastNotify({ title: 'Step 2/3 (Withdraw Liquidity from vault started)', Icon: SuccessIcon });
+		const withdrawAll2Response = await withdrawAll2();
+		consoleLogToMe(2, 'withdrawAll2Response', withdrawAll2Response);
+		if (!withdrawAll2Response.success) {
+			dispatchToastNotify({
+				Icon: withdrawAll2Response.toast?.Icon || ErrorIcon,
+				title: withdrawAll2Response.toast?.title || withdrawAll2Response.message,
+			});
+			return 'Cant process withdraw all';
+		}
+
+		// Withdraw_all_2 and storage (step 3/3)
+		// UX notifyer
+		const { available } = await getVaultStorageBalanceOf();
+		const withdrawAmount = toReadableNumber(24, available);
+		dispatchToastNotify({
+			title: `Step 2...3/3 (Withdraw $${parseFloat(withdrawAmount).toFixed(3)} Near amount from vault started)`,
+			Icon: SuccessIcon,
+		});
+		const storageWithdrawResponse = await batchTransactionWithdrawAllUserLiquidityPoolAndStorage({
+			amount: available,
+		});
+		consoleLogToMe(3, 'storageWithdrawResponse', storageWithdrawResponse);
+		if (!storageWithdrawResponse.success) {
+			dispatchToastNotify({
+				Icon: storageWithdrawResponse.toast?.Icon || ErrorIcon,
+				title: storageWithdrawResponse.toast?.title || storageWithdrawResponse.message,
+			});
+			return 'Cant process withdraw all2';
+		}
+
+		// DEBUG - Get Log balance of account in VAULT
+		getLogForUserBalanceFromVault();
+		dispatchToastNotify({ title: 'Successfull withdraw', Icon: SuccessIcon });
+
+		return 'All done';
+	};
+
 	return (
 		<CardBodyTabsContentItem data-component="CardBodyTabsContentItem" className={isActive ? 'active' : ''}>
 			<DisplayerVaultEarnings data-component="DisplayerVaultEarnings" populatedSeed={populatedSeed} />
@@ -562,25 +821,63 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 				populatedSeed={populatedSeed}
 				useFluxusVaultContractState={useFluxusVaultContract}
 			/>
-			<ButtonPrimary
+			<div
 				style={{
+					display: 'flex',
+					justifyContent: 'center',
+					alignItems: 'center',
+					flexDirection: 'row',
+					flexWrap: 'nowrap',
 					width: '100%',
-					margin: '30px 0 10px 0',
-					height: '50px',
+					gap: '16px',
 				}}>
-				Connect Wallet
-			</ButtonPrimary>
+				<ButtonPrimary
+					disabled={!vaultIsEnabled()}
+					style={{
+						width: '100%',
+						margin: '30px 0 10px 0',
+						height: '50px',
+						opacity: `${!vaultIsEnabled() ? '0.4' : '1'}`,
+					}}
+					onClick={() => {
+						if (getWallet().isSignedIn()) {
+							openModalToStakeToVault();
+						} else {
+							signInToVaultContract();
+						}
+					}}>
+					{vaultIsEnabled() ? (
+						<>
+							{(getWallet().isSignedIn() && 'Stake with near') || 'Connect Wallet'}{' '}
+							<small>{populatedSeed.pool_id}</small>
+						</>
+					) : (
+						<>Farm not enabled to auto-compound yet</>
+					)}
+				</ButtonPrimary>
+				{vaultIsEnabled() && getWallet().isSignedIn() && (
+					<ButtonPrimary
+						style={{
+							minWidth: '170px',
+							margin: '30px 0 10px 0',
+							height: '50px',
+						}}
+						onClick={() => {
+							doWithdrawAll();
+						}}>
+						Withdraw All
+					</ButtonPrimary>
+				)}
+			</div>
 		</CardBodyTabsContentItem>
 	);
 };
 
-export const DisplaySeparator = () => {
-	return (
-		<Separator data-component="separator">
-			<span />
-		</Separator>
-	);
-};
+export const DisplaySeparator = () => (
+	<Separator data-component="separator">
+		<span />
+	</Separator>
+);
 
 export const DisplayerVaultEarnings = (props: { populatedSeed: IPopulatedSeed }) => {
 	const { populatedSeed } = props;
@@ -588,7 +885,7 @@ export const DisplayerVaultEarnings = (props: { populatedSeed: IPopulatedSeed })
 		<CardBodyEarnings data-type="ghost" data-componentname="CardBodyEarnings" title="Card Body Earnings">
 			<label htmlFor="Earnings">Earnings</label>
 			<div data-type="drop-earnings">
-				{`$${formatMoneyWithShortName(formatMoney(87945.64))}`}
+				{`$${formatMoneyWithShortName(formatMoney(Number(populatedSeed.vault.user.shares_tvl)))}`}
 				<img
 					className="coinIcon"
 					src={NearIcon}
@@ -657,7 +954,6 @@ export const DisplayerCardBodyRewards = (props: {
 					formatVaultDataAsPopulatedReward(farm, updateRewardsValues),
 				),
 			);
-			console.log(rewardsList);
 			setRewardsStateList(rewardsList);
 			setStateRewardsIsLoading(false);
 		} catch (e: any) {
@@ -679,22 +975,20 @@ export const DisplayerCardBodyRewards = (props: {
 	return (
 		<CardBodyRewardsList data-componentname="CardBodyRewardsList">
 			<div data-type="label">
-				Reward Tokens{' '}
+				Compound Tokens{' '}
 				<img data-type="icon" src={WhatThisMeanIcon} width="16px" height="16px" alt="Earnings in near" />
 			</div>
 			<div data-type="rewardsList">
-				<span>{`$${formatMoneyWithShortName(formatMoney(87983.64))}`}</span>
-				{rewardsStateList.map((reward, index: number) => {
-					return (
-						<img
-							className="coinIcon"
-							src={reward.reward_token_metadata.icon}
-							width="28px"
-							height="28px"
-							alt={`Earnings for ${reward.reward_token_metadata.symbol}`}
-						/>
-					);
-				})}
+				{rewardsStateList.map((reward, index: number) => (
+					<img
+						key={`${reward.reward_token_id}-${index}`}
+						className="coinIcon"
+						src={reward.reward_token_metadata.icon}
+						width="28px"
+						height="28px"
+						alt={`Earnings for ${reward.reward_token_metadata.symbol}`}
+					/>
+				))}
 			</div>
 		</CardBodyRewardsList>
 	);
@@ -713,7 +1007,7 @@ export const DisplayerCardBodyCompountInfo = (props: {
 				Auto-compound
 			</div>
 			<div data-type="coumpound-item" style={{ flex: '3' }}>
-				<label>per week</label>
+				<label htmlFor="per week">per week</label>
 				<span>224</span>
 			</div>
 			<div data-type="coumpound-item" style={{ flex: '2' }}>
@@ -743,7 +1037,7 @@ export const DisplayCardBodyVaultInfo = (props: {
 			</div>
 			<div data-type="vault-item">
 				<label>TVL</label>
-				<span>{`$${formatMoneyWithShortName(formatMoney(2798000003.64))}`}</span>
+				<span>{`$${formatMoneyWithShortName(formatMoney(Number(populatedSeed.pool.tvl)))}`}</span>
 			</div>
 		</CardBodyVaultInfo>
 	);
@@ -1027,6 +1321,7 @@ const ModalUnstakeFooter = (props: {
 			useFluxusVaultContract,
 		};
 		await unstake(unstakeValues).catch((error: any) => {
+			// Error log
 			console.log('Stake error: ', error);
 		});
 		return unstakeValues;
@@ -1077,6 +1372,7 @@ const openModalStake = ({
 		),
 	});
 };
+
 const ModalStakeHeader = () => (
 	<>
 		<div
@@ -1085,14 +1381,15 @@ const ModalStakeHeader = () => (
 				justifyContent: 'center',
 				alignItems: 'center',
 				width: '100%',
-				padding: '25px 15px',
+				padding: '0',
 			}}>
-			<h1 style={{ fontWeight: 'regular', fontSize: '1.1rem', width: '100%', textAlign: 'center' }}>
-				Stake Your LP Token`s to farm your rewards.
+			<h1 style={{ fontWeight: 'regular', fontSize: '1.1rem', margin: '0', width: '100%', textAlign: 'center' }}>
+				Stake with your wallet Near balance to auto-compound
 			</h1>
 		</div>
 	</>
 );
+
 const ModalStakeContent = (props: {
 	totalAvailableToStake: number | string;
 	populatedSeed: IPopulatedSeed;
@@ -1113,7 +1410,6 @@ const ModalStakeContent = (props: {
 
 	const updateModalValues = (totalToStake: number | string) => {
 		const amount: string = toReadableNumber(24, toNonDivisibleNumber(24, `${totalToStake || '0'}`));
-		console.log('updateStakeModalValues amount: ', { totalToStake, amount });
 		themeProvided.modal.setModalProps({
 			isActived: true,
 			header: themeProvided.modal.modalProps.header,
@@ -1129,20 +1425,26 @@ const ModalStakeContent = (props: {
 	};
 
 	useEffect(() => {
+		const DOMLoaded = true;
 		let timeToUpdateValue = setTimeout(() => {}, 10);
-		if (stakeInputValue.length > 0 && stakeInputValue !== stakeValue) {
-			const formatedAmount = formatReadableAmountValue(stakeInputValue);
-			const amountIsLowerThenTotalAvailableToStake =
-				Number(formatedAmount) <= Number(toReadableNumber(24, `${totalAvailableToStake}`));
-			const amount = amountIsLowerThenTotalAvailableToStake
-				? formatedAmount
-				: toReadableNumber(24, `${totalAvailableToStake}`);
-			timeToUpdateValue = setTimeout(() => {
-				setStakeInputValue(amount);
-			}, 2000);
-			setStakeValue(amount);
-			updateModalValues(amount);
-		}
+		(async () => {
+			if (DOMLoaded) {
+				if (stakeInputValue.length > 0 && stakeInputValue !== stakeValue) {
+					const formatedAmount = formatReadableAmountValue(stakeInputValue);
+					const amountIsLowerThenTotalAvailableToStake =
+						Number(formatedAmount) <= Number(toReadableNumber(24, `${totalAvailableToStake}`));
+					const amount = amountIsLowerThenTotalAvailableToStake
+						? formatedAmount
+						: toReadableNumber(24, `${totalAvailableToStake}`);
+					timeToUpdateValue = setTimeout(() => {
+						setStakeInputValue(amount);
+					}, 2000);
+					setStakeValue(amount);
+					updateModalValues(amount);
+				}
+			}
+		})();
+
 		return () => {
 			clearTimeout(timeToUpdateValue);
 		};
@@ -1158,6 +1460,7 @@ const ModalStakeContent = (props: {
 		<>
 			<div
 				style={{
+					position: 'relative',
 					display: 'flex',
 					justifyContent: 'space-between',
 					alignItems: 'center',
@@ -1165,8 +1468,7 @@ const ModalStakeContent = (props: {
 					flexWrap: 'nowrap',
 					gap: '8px',
 					width: '100%',
-					minHeight: '200px',
-					padding: '10px 15px',
+					minHeight: '190px',
 				}}>
 				<input
 					type="text"
@@ -1179,12 +1481,11 @@ const ModalStakeContent = (props: {
 						backgroundColor: '#111111',
 						border: '1px solid #63cdb4',
 						boxShadow: `0px 0px 15px rgba(0, 0, 0, 0.02)`,
-						padding: `0 10px`,
+						padding: `0 60px 0 10px`,
 						color: '#FFFFFF',
 					}}
 					value={stakeInputValue}
 					onChange={(ev: ChangeEvent<HTMLInputElement>) => {
-						console.log('event: ', ev);
 						const value = ev.target.value.length > 0 ? ev.target.value : `0`;
 						if (value.slice(-1) === '.') {
 							setStakeInputValue(value);
@@ -1197,9 +1498,17 @@ const ModalStakeContent = (props: {
 				/>
 				<span
 					style={{
-						border: '1px solid #63cdb4',
-						borderRadius: '6px',
-						padding: '5px 10px',
+						border: 'none',
+						borderLeft: '1px solid #63cdb4',
+						height: '45px',
+						display: 'flex',
+						justifyContent: 'center',
+						alignItems: 'center',
+						flexDirection: 'row',
+						flexWrap: 'nowrap',
+						width: '60px',
+						position: 'absolute',
+						right: '1px',
 					}}
 					onClick={(ev: any) => {
 						setStakeInputValue(toReadableNumber(24, `${totalAvailableToStake}`));
@@ -1216,45 +1525,213 @@ const ModalStakeFooter = (props: {
 	useFluxusVaultContract: boolean;
 }) => {
 	const { totalAvailableToStake, populatedSeed, useFluxusVaultContract } = props;
-	const doStake = async (amount: string, seed_id: string | number): Promise<any> => {
-		// const stakeAmount = `${parseFloat(amount) / 3}`;
-		// if (typeof setStateRewardsIsLoading === 'function') {
-		// 	setStateRewardsIsLoading(true);
-		// }
-		const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC();
-		const tokenID = `${seed_id}`.split('@').splice(1, 1).join('');
-		const stakeValues = {
-			token_id: getMftTokenId(`${tokenID}`),
-			amount,
-			useFluxusVaultContract,
-		};
-		const staked = await windowWalletProvider
-			.getNearPresets()
-			.stake_farm_lp_Tokens(stakeValues)
-			.catch((error: any) => {
-				console.log('Stake error: ', error);
-			});
-		const walletResponse = await nearWalletAsWindow.getWalletCallback();
-		console.log('walletResponse: ', walletResponse);
-		if (!walletResponse.success) {
-			console.log(walletResponse);
-			window.alert(walletResponse.message);
-		}
-		console.log('staked: ', amount);
-		return stakeValues;
+
+	const themeProvided = useDarkMode();
+
+	const closeModal = () => {
+		themeProvided.modal.setModalProps({
+			isActived: false,
+			header: themeProvided.modal.modalProps.header,
+			content: themeProvided.modal.modalProps.content,
+			footer: themeProvided.modal.modalProps.footer,
+		});
 	};
+
+	const getProviderFromWindowWallet = async (msTime?: number | undefined) => {
+		nearWalletAsWindow._makeItWaitBeforeClose = msTime && msTime >= 500 ? msTime : 500;
+		const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<ProviderPattern>(true);
+		return windowWalletProvider.getProvider();
+	};
+
+	const depositNearToVault = async (
+		depositAmount: number | string | undefined = '1',
+	): Promise<ICallbackData & { toast: IToastFyProps }> => {
+		if (typeof depositAmount === 'undefined') {
+			return {
+				toast: { Icon: WarningIcon, title: 'Did not received amount for deposit action' },
+				success: false,
+				message: 'Did not received amount for deposit action',
+				data: {},
+				executionsCount: 0,
+				finished: true,
+				finishedTime: 0,
+				totalExecutionTime: 0,
+			};
+		}
+		const provider = await getProviderFromWindowWallet(100);
+		provider.getProviderActions().getVaultActions().storageDeposit(`${depositAmount}`);
+		const walletResponse = await nearWalletAsWindow.getWalletCallback();
+		return { toast: { Icon: WarningIcon, title: 'Did not received amount for deposit action' }, ...walletResponse };
+	};
+
+	const getVaultStorageBalanceOf = async () => {
+		const account_id = getWallet().getAccountId();
+		return ProviderPattern.getProviderInstance()
+			.getProviderActions()
+			.getVaultActions()
+			.execVaultContractAsViewFunction({ methodName: 'storage_balance_of', args: { account_id } });
+	};
+
+	const WrapDepositedNearIntoVault = async (): Promise<ICallbackData & { toast: IToastFyProps }> => {
+		const response: ICallbackData & { toast: IToastFyProps } = {
+			success: true,
+			message: 'Near wrapped',
+			data: {},
+			toast: {},
+			executionsCount: 0,
+			finished: true,
+			finishedTime: 0,
+			totalExecutionTime: 0,
+		};
+		try {
+			const provider = await getProviderFromWindowWallet(5000);
+			const vaultActions = provider.getProviderActions().getVaultActions();
+
+			vaultActions.wrapNearBalance();
+			const walletResponse = await nearWalletAsWindow.getWalletCallback();
+			response.data = walletResponse || {};
+			return response;
+		} catch (e: any) {
+			response.success = false;
+			response.message = e?.message || 'Unknow error to wrap near';
+			response.toast = { Icon: ErrorIcon, title: 'Unknow error to wrap near' };
+			return response;
+		}
+	};
+
+	const batchTransactionDepositAndWrapNear = async (depositAmount: number | string | undefined = '0') => {
+		const response: ICallbackData & { toast: IToastFyProps } = {
+			success: true,
+			message: 'Deposit and wrap',
+			data: {},
+			toast: {},
+			executionsCount: 0,
+			finished: true,
+			finishedTime: 0,
+			totalExecutionTime: 0,
+		};
+		try {
+			const provider = await getProviderFromWindowWallet(2000);
+			const vaultActions = provider.getProviderActions().getVaultActions();
+
+			vaultActions.batchTransactionDepositAndWrapNearBalance({ amountToDeposit: `${depositAmount || '0'}` });
+			const walletResponse = await nearWalletAsWindow.getWalletCallback();
+			response.data = walletResponse || {};
+			return response;
+		} catch (e: any) {
+			response.success = false;
+			response.message = e?.message || 'Unknow error to wrap near';
+			response.toast = { Icon: ErrorIcon, title: 'Unknow error to wrap near' };
+			return response;
+		}
+	};
+
+	const addToVault = async (): Promise<ICallbackData & { toast: IToastFyProps }> => {
+		const response: ICallbackData & { toast: IToastFyProps } = {
+			success: true,
+			message: 'Success added to vault',
+			data: {},
+			toast: {},
+			executionsCount: 0,
+			finished: true,
+			finishedTime: 0,
+			totalExecutionTime: 0,
+		};
+		try {
+			await makeWait(1000);
+			const provider = await getProviderFromWindowWallet(2000);
+			const vaultActions = provider.getProviderActions().getVaultActions();
+
+			vaultActions.addToVault({});
+			const walletResponse = await nearWalletAsWindow.getWalletCallback();
+			response.data = walletResponse || {};
+			return response;
+		} catch (e: any) {
+			response.success = false;
+			response.message = e?.message || 'Unknow error when add to vault';
+			response.toast = { Icon: ErrorIcon, title: 'Unknow error when add to vault' };
+			return response;
+		}
+	};
+
+	const doStake = async (amount: string, seed_id: string | number): Promise<any> => {
+		// DEBUG - Dev debug helper
+		const consoleLogToMe = (step: number, stepName: string, data: any, totalSteps: number = 3) => {
+			const title = `step ${stepName} (${step}/${totalSteps})`;
+			console.log(`========== Stake ${title} Start ==========`);
+			console.log(title, data);
+			console.log(`========== Stake ${title} End ==========`);
+		};
+
+		// DEBUG - Dev debug balance helper
+		const getLogForUserBalanceFromVault = async () => {
+			const balance = await getVaultStorageBalanceOf();
+			consoleLogToMe(0, 'User Vault Balance', balance, 0);
+		};
+
+		// DEBUG - Get Log balance of account in VAULT
+		getLogForUserBalanceFromVault();
+
+		// UX notifyer
+		dispatchToastNotify({
+			title: `Step 1...2/3 (Depositing ${amount} near to vault contract)`,
+			Icon: SuccessIcon,
+		});
+		// Deposit to vault contract
+		const depositResponse = await batchTransactionDepositAndWrapNear(amount);
+		consoleLogToMe(1, 'Deposit To Vault and wrap it', depositResponse);
+		if (!depositResponse.success) {
+			dispatchToastNotify({
+				Icon: depositResponse.toast?.Icon || ErrorIcon,
+				title: depositResponse.toast?.title || depositResponse.message,
+			});
+			return 'Cant process deposit';
+		}
+		// DEBUG - Get Log balance of account in VAULT
+		getLogForUserBalanceFromVault();
+
+		// UX notifyer
+		dispatchToastNotify({
+			title: 'Step 3/3 (Starting auto-compound from add to vault process function)',
+			Icon: SuccessIcon,
+		});
+		// Finishe operation adding to vault
+		const addToVaultResponse = await addToVault();
+		consoleLogToMe(3, 'Add to Vault ', addToVaultResponse);
+		if (!addToVaultResponse.success) {
+			dispatchToastNotify({
+				Icon: addToVaultResponse.toast?.Icon || ErrorIcon,
+				title: addToVaultResponse.toast?.title || addToVaultResponse.message,
+			});
+			return 'Cant add to vault ';
+		}
+		closeModal();
+		// DEBUG - Get Log balance of account in VAULT
+		getLogForUserBalanceFromVault();
+
+		// UX notifyer
+		dispatchToastNotify({
+			title: 'All done! Your near was swapped and staked with vault contract to APY Earnings.',
+			Icon: SuccessIcon,
+		});
+
+		return 'All done';
+	};
+
+	const [vaultState, setVaultState] = useState({});
+
 	return (
 		<>
-			<div style={{ width: '100%', padding: '10px 15px' }}>
-				<ButtonGhost
+			<div style={{ width: '100%', padding: '0' }}>
+				<ButtonPrimary
 					style={{ width: '100%' }}
 					onClick={(ev: any) => {
 						doStake(`${totalAvailableToStake}`, populatedSeed.seed_id);
 					}}>
-					Stake now
-				</ButtonGhost>
-				<p>
-					<small>{`Ready to unstake: ${`${totalAvailableToStake}`.substring(0, 4)}`}</small>
+					Start to Earn
+				</ButtonPrimary>
+				<p style={{ display: 'block' }}>
+					<small>{`Ready to unstake: ${`${totalAvailableToStake}`.substring(0, 6)}`}</small>
 				</p>
 			</div>
 		</>
