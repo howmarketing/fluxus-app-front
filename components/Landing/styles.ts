@@ -27,7 +27,7 @@ export const WrappContent = styled.div`
 	min-height: 100vh;
 	background-color: ${({ theme }) => theme.colors.background_primary};
 	background-repeat: no-repeat !important;
-	background-size: 1700px auto !important;
+	background-size: 100% auto !important;
 	background-position: center -5px !important;
 `;
 

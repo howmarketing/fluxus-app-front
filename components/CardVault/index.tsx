@@ -1781,7 +1781,7 @@ const ModalStakeFooter = (props: {
 					}}>
 					Start to Earn
 				</ButtonPrimary>
-				<p style={{ display: 'block' }}>
+				<p style={{ display: 'none' }}>
 					<small>{`Ready to unstake: ${`${totalAvailableToStake}`.substring(0, 6)}`}</small>
 				</p>
 			</div>
