@@ -1355,9 +1355,7 @@ const ModalUnstakeFooter = (props: {
 					}}>
 					Unstake
 				</ButtonGhost>
-				<p>
-					<small>{`Ready to unstake: ${`${totalStaked}`.substring(0, 4)}`}</small>
-				</p>
+				<p />
 			</div>
 		</>
 	);
