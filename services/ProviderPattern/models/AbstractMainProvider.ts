@@ -76,7 +76,7 @@ export default class AbstractMainProvider implements MainProviderInterface {
 			return this;
 		}
 		const configAs = (connectionConfig || this.getProviderConfigData()) as unknown;
-		const config =  configAs as NearConfig; // Implement after
+		const config = configAs as NearConfig; // Implement after
 		this.providerConnection = new Near({ keyStore: new keyStores.BrowserLocalStorageKeyStore(), ...config });
 		return this;
 	}

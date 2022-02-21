@@ -19,7 +19,7 @@ const Landing = function (props: ILanding) {
 			data-id="wrappLandingContent"
 			style={{
 				backgroundImage: props?.background?.backgroundImage && `url(${props.background.backgroundImage})`,
-				backgroundColor: props?.background?.backgroundColor,
+				backgroundColor: props?.background?.backgroundColor || '#100317',
 			}}>
 			<Header />
 			<Main data-id="mainLandingContent">

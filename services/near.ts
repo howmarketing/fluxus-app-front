@@ -31,12 +31,10 @@ export const getNear = (): Near => {
 	if (nearConnection !== null) {
 		return nearConnection;
 	}
-	nearConnection = new Near({headers:{
-
-	}, keyStore: new keyStores.BrowserLocalStorageKeyStore(), ...config });
+	nearConnection = new Near({ headers: {}, keyStore: new keyStores.BrowserLocalStorageKeyStore(), ...config });
 	return nearConnection;
 };
-export const wallet:any = null;
+export const wallet: any = null;
 const walletInstance: any = null;
 export const getWallet = (): AbstractMainWallet => ProviderPattern.getProviderInstance().getWallet();
 // if (walletInstance !== null) {
