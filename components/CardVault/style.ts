@@ -74,11 +74,7 @@ export const CardVaultAreaStyled = styled.div<ICard>`
 	margin: 12px 0;
 	overflow: hidden;
 	box-shadow: 7px 7px 25px ${({ theme }) => (theme.title === 'LIGHT' ? 'rgba(98, 209, 180, 0.3)' : '#00000054')};
-	&:hover {
-		transition: all 0.2s linear;
-		box-shadow: 4px 6px 16px ${({ theme }) => (theme.title === 'LIGHT' ? 'rgba(98, 209, 180, 0.3)' : '#2504b152')};
-		transform: scale(1.0078);
-	}
+
 	& a {
 		text-decoration: none;
 	}
@@ -206,7 +202,6 @@ export const CardHeaderCoinPairsIcon = styled.div`
 				box-shadow: -1px 1px 20px rgba(0, 0, 0, 0.2);
 				&:hover {
 					z-index: 3;
-					transform: scale(1.0508) rotate(-35deg);
 				}
 			}
 			&:nth-child(2) {
@@ -216,7 +211,6 @@ export const CardHeaderCoinPairsIcon = styled.div`
 				box-shadow: -1px 1px 20px rgba(0, 0, 0, 0.2);
 				&:hover {
 					z-index: 3;
-					transform: scale(1.0508) rotate(-35deg);
 				}
 			}
 		}
@@ -262,6 +256,7 @@ export const CardBodyEarnings = styled.div`
 	flex: 2;
 	padding: 0 35px 0 32px;
 	height: 56px;
+	box-shadow: 1px 1000px 1px ${({ theme }) => (theme.title === 'LIGHT' ? '#fcfcfc' : '#121212')} inset !important;
 	& > label {
 		display: inline-block;
 		width: auto;
@@ -309,7 +304,7 @@ export const CardBodyRewardsList = styled.div`
 		flex-wrap: nowrap;
 		margin-right: 55px;
 		gap: 8px;
-		color: #f8f8f9;
+		color: ${({ theme }) => (theme.title === 'LIGHT' ? theme.colors.grey : '#F8F8F9')} !important;
 		font-family: 'Mulish', sans-serif;
 		font-size: 1rem;
 		font-weight: 400;
@@ -331,7 +326,7 @@ export const CardBodyRewardsList = styled.div`
 		overflow-y: clip;
 		overflow-wrap: unset;
 		gap: 8px;
-		color: #f8f8f9;
+		color: ${({ theme }) => (theme.title === 'LIGHT' ? theme.colors.grey : '#F8F8F9')} !important;
 		font-family: 'Mulish', sans-serif;
 		font-size: 1rem;
 		font-weight: 400;
@@ -349,7 +344,7 @@ export const CardBodyRewardsList = styled.div`
 			position: relative;
 			margin-right: 11px;
 			padding-top: 3px;
-			color: #f8f8f9 !important;
+			color: ${({ theme }) => (theme.title === 'LIGHT' ? theme.colors.grey : '#F8F8F9')} !important;
 			font-family: 'Mulish', sans-serif;
 			font-weight: 600;
 			font-size: 1.138rem;
@@ -362,11 +357,11 @@ export const CardBodyRewardsList = styled.div`
 			z-index: 99;
 			margin-left: -14px;
 			border-radius: 1000px;
-			box-shadow: -3px 2px 6px rgba(0, 0, 0, 1);
+
 			transform: scale(1.04);
 			&:hover {
 				transition: all 0.1s linear;
-				transform: scale(1.1508) rotate(-35deg);
+
 				filter: brightness(1.2);
 				margin-left: -8px;
 				box-shadow: -3px -1px 5px rgba(0, 105, 255, 0.39) !important;
@@ -392,7 +387,7 @@ export const CardBodyCompountInfo = styled.div`
 		flex-direction: row;
 		flex-wrap: wrap;
 		gap: 2px;
-		color: #f8f8f9;
+		color: ${({ theme }) => (theme.title === 'LIGHT' ? theme.colors.grey : '#F8F8F9')} !important;
 		font-family: 'Mulish', sans-serif;
 		font-size: 1rem;
 		font-weight: 400;
@@ -444,6 +439,7 @@ export const CardBodyVaultInfo = styled.div`
 	flex-direction: row;
 	flex-wrap: nowrap;
 	padding: 15px 0 0 0;
+
 	& > div[data-type='vault-item'] {
 		position: relative;
 		display: flex;
@@ -452,7 +448,7 @@ export const CardBodyVaultInfo = styled.div`
 		flex-direction: row;
 		flex-wrap: wrap;
 		gap: 4px;
-		color: #f8f8f9;
+		color: ${({ theme }) => (theme.title === 'LIGHT' ? theme.colors.grey : '#F8F8F9')} !important;
 		font-family: 'Mulish', sans-serif;
 		font-size: 1rem;
 		font-weight: 400;
@@ -463,7 +459,7 @@ export const CardBodyVaultInfo = styled.div`
 			font-family: 'Mulish', sans-serif;
 			font-weight: 500;
 			font-size: 0.88rem;
-			color: ${({ theme }) => (theme.title === 'LIGHT' ? '#f8f8f9' : '#f8f8f9')} !important;
+			color: ${({ theme }) => (theme.title === 'LIGHT' ? theme.colors.grey : '#F8F8F9')} !important;
 		}
 		& > span {
 			width: 100%;

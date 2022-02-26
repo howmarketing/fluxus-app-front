@@ -1,4 +1,3 @@
-/* eslint-disable react/no-array-index-key */
 /* eslint-disable @next/next/no-img-element */
 import React, { useEffect, useState, ReactElement } from 'react';
 import Switch from 'react-switch';
@@ -13,21 +12,6 @@ import { getPoolTvlFiatPrice, IPoolFiatPrice } from '@services/api';
 import ProviderPattern from '@ProviderPattern/index';
 import { getWallet } from '@services/near';
 import { WrapBox, SwitchArea, SwitchAreaTitle, SwitchAreaTitleTag, ListVaultsBox } from './styles';
-/*
-export interface IPoolFiatPrice {
-	amounts: string[];
-	amp: number;
-	farming: boolean;
-	id: string;
-	pool_kind: string;
-	shares_total_supply: string;
-	token0_ref_price: string;
-	token_account_ids: string[];
-	token_symbols: string[];
-	total_fee: number;
-	tvl: string;
-}
-*/
 
 export type IPopulatedPoolExtraDataToken = { populated_tokens: Array<TokenMetadata>; shares_lptoken: any };
 export type IPopulatedPoolExtraDataVolume = { volumes: PoolVolumes };
@@ -62,7 +46,7 @@ const VaultList: React.FC = function () {
 	// Used to keep box height size while rendering the list of farms.
 	const [stateVaultsBoxCssStyleProperties, setStateVaultsBoxCssStyleProperties] = useState<React.CSSProperties>({
 		minHeight: '300px',
-	} as React.CSSProperties);
+	});
 	// Set if it will use the fluxus farm contract (Setted from UI Switch Button).
 	const [useFluxusVaultContractState, setUseFluxusVaultContractState] = useState<boolean>(true);
 	// List of seeds to show farms at farm box component
@@ -77,10 +61,10 @@ const VaultList: React.FC = function () {
 			if (valtBoxElement.length < 1) {
 				throw new Error(`Vault box element not found for query "div[data-componentname="valtBoxElement"]".`);
 			}
-			const minHEightAsCurrentHeightValue = `${valtBoxElement[0].clientHeight}px`;
+			const minHeightAsCurrentHeightValue = `${valtBoxElement[0].clientHeight}px`;
 
 			setStateVaultsBoxCssStyleProperties({
-				minHeight: minHEightAsCurrentHeightValue,
+				minHeight: minHeightAsCurrentHeightValue,
 			} as React.CSSProperties);
 
 			return true;
@@ -100,7 +84,7 @@ const VaultList: React.FC = function () {
 			}
 			setStateVaultsBoxCssStyleProperties({
 				minHeight: '300px',
-			} as React.CSSProperties);
+			});
 			return true;
 		} catch (e) {
 			console.error(e);
@@ -140,7 +124,10 @@ const VaultList: React.FC = function () {
 			},
 		);
 		// Array of IPopulatedSeed data object
+		// TODO: This should be moved to a context
 		const populatedSeeds: Array<IPopulatedSeed> = await Promise.all(
+			// TODO: async doesn't work within map functions
+			// see https://codezup.com/how-to-use-async-await-with-array-map-in-javascript/ good guide
 			listSeeds.map(async (seed, index: number) => {
 				const populateSeed = seed as IPopulatedSeed;
 				// getPopulatedFarms Promise

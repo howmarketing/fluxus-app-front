@@ -31,9 +31,7 @@ const ToastCloseButton = () => (
 );
 
 export const dispatchToastNotify = ({ theme = 'DARK', autoClose = 8000, ...dispatchProps }: IToastFyProps) => {
-	console.log(dispatchProps);
 	const { Icon, title } = dispatchProps;
-	console.log({ theme, Icon, title, autoClose });
 	toast(<ToastContent theme={theme} Icon={Icon} title={title} />, {
 		position: 'top-right',
 		autoClose,
