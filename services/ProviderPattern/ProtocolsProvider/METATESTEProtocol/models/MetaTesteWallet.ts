@@ -8,7 +8,6 @@ import { AccountBalance } from 'near-api-js/lib/account';
 import { Action, createTransaction, Transaction } from 'near-api-js/lib/transaction';
 import METATESTEProtocolProvider from '@ProviderPattern/ProtocolsProvider/METATESTEProtocol/index';
 import Web3 from 'web3';
-import { HttpProvider as web3Providers } from 'web3-core/types/index';
 
 type IBalance = { amount_available: string; balance_details: AccountBalance };
 export default class MetaTesteWallet extends AbstractMainWallet {

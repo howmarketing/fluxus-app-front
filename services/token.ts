@@ -217,12 +217,6 @@ export const getUserTokenBalances = async ({
 }): Promise<TokenBalancesView> => {
 	const args = { account_id };
 	const methodName = 'get_deposits';
-	if (debug) {
-		console.log('getUserTokenBalances(DEBUG LOG): ', {
-			params: { methodName, args, account_id, fluxusContractName: contract_id, debug },
-		});
-		return {} as TokenBalancesView;
-	}
 	const tokenBalancesViewResponse = await refFiViewFunction({
 		methodName,
 		args,

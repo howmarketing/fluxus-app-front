@@ -2,7 +2,6 @@ import { IPROTOCOL_NAME, IPROTOCOLS, PROTOCOLS } from './constants/index';
 import AbstractMainProvider from './models/AbstractMainProvider';
 import MainProvider from './models/MainProvider';
 import AURORAProtocolProvider from './ProtocolsProvider/AURORAProtocol';
-import METATESTEProtocolProvider from './ProtocolsProvider/METATESTEProtocol';
 import NEARProtocolProvider from './ProtocolsProvider/NEARProtocol';
 
 export default class ProviderPattern {
@@ -20,14 +19,11 @@ export default class ProviderPattern {
 
 	protected declare AURORAProtocolProvider: AbstractMainProvider & AURORAProtocolProvider;
 
-	protected declare METATESTEProtocolProvider: AbstractMainProvider & METATESTEProtocolProvider;
-
 	constructor() {
 		this.protocols = PROTOCOLS;
 		this.MAINProtocolProvider = MainProvider.getInstance();
 		this.NEARProtocolProvider = NEARProtocolProvider.getInstance();
 		this.AURORAProtocolProvider = AURORAProtocolProvider.getInstance();
-		this.METATESTEProtocolProvider = METATESTEProtocolProvider.getInstance();
 	}
 
 	/**
@@ -98,9 +94,7 @@ export default class ProviderPattern {
 		if (protocolName === 'AURORAProtocolProvider') {
 			return this.AURORAProtocolProvider;
 		}
-		if (protocolName === 'METATESTEProtocolProvider') {
-			return this.METATESTEProtocolProvider;
-		}
+
 		// Should never get in here. Maybe put some thow exceptions here
 		return this.NEARProtocolProvider;
 	}

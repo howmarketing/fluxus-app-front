@@ -1,44 +1,13 @@
 import BN from 'bn.js';
-import {
-	ONE_YOCTO_NEAR,
-	refFiViewFunction,
-	Transaction,
-	REF_FI_CONTRACT_ID,
-	executeMultipleTransactions,
-} from '@services/near';
-import { ftGetStorageBalance, TokenMetadata } from '@services/ft-contract';
-
-import { toNonDivisibleNumber } from '@utils/numbers';
-import { STORAGE_TO_REGISTER_WITH_FT, storageDepositAction } from '@services/creators/storage';
-import { unwrapNear, WRAP_NEAR_CONTRACT_ID } from '@services/wrap-near';
-import ProviderPattern from '@services/ProviderPattern';
-import { getStakedListByAccountId } from '@services/farm';
-import { Near } from 'near-api-js';
 import { functionCall } from 'near-api-js/lib/transaction';
-import AbstractMainProviderActions from './AbstractMainProviderActions';
-import AbstractGenericActions from './AbstractGenericActions';
-
-type IFunctionCall = {
-	contractId?: string;
-	methodName?: string;
-	args?: Record<any, any>;
-	gas?: BN;
-	amount?: BN;
-};
-
-type IBatchTransaction = { receiverId: string; functionsCall: Array<IFunctionCall> };
-
-type IExecBatchTransaction = Array<IBatchTransaction>;
-
-interface WithdrawOptions {
-	token: TokenMetadata;
-	amount: string;
-	unregister?: boolean;
-}
-
-export interface TokenBalancesView {
-	[tokenId: string]: string;
-}
+import { toNonDivisibleNumber } from '@utils/numbers';
+import ProviderPattern from '@ProviderPattern/index';
+import { getStakedListByAccountId } from '@services/farm';
+import AbstractMainProviderActions from '@ProviderPattern/models/Actions/AbstractMainProviderActions';
+import AbstractGenericActions, {
+	IFunctionCall,
+	IExecBatchTransaction,
+} from '@ProviderPattern/models/Actions/AbstractGenericActions';
 
 export default class AbstractMainVaultProviderActions extends AbstractGenericActions {
 	protected declare devImplementation: any;
@@ -203,13 +172,12 @@ export default class AbstractMainVaultProviderActions extends AbstractGenericAct
 	public async addToVault({ account_id = this.getWallet().getAccountId() }) {
 		this.devImplementation = true;
 		const vaultContractID = this.getProviderConfigData().FLUXUS_VAULT_CONTRACT_ID;
-		const walletAccountID = account_id;
 		const gasBN = new BN('300000000000000');
 		const amountBN = new BN(0);
 		const methodName = 'add_to_vault';
 		const args = {
 			vault_contract: vaultContractID,
-			account_id: walletAccountID,
+			account_id,
 		};
 		const dataArr = { vaultContractID, methodName, args, gasBN, amountBN };
 		console.log('dataArr: ', dataArr);
@@ -278,6 +246,28 @@ export default class AbstractMainVaultProviderActions extends AbstractGenericAct
 		return this.execVaultContractAsCallFunction<T>({ methodName: 'withdraw_all_2', args });
 	}
 
+	/**
+	 * STEP 3/3 FOR WITHDRAW -
+	 * USER GET THE WITHDRAW OF WRAP NEAR FROM VAULT TO USER WALLET (LAST STEP OF WITHDRAW)
+	 * @description User have some amount in wNear with vault, so this will withdraw to user wallet
+	 * @description These wNear will be converted to Near.
+	 */
+	public async withdrawUserStorage({ amount = '0' }) {
+		const args = {
+			amount: toNonDivisibleNumber(24, amount),
+		};
+		return this.execVaultContractAsCallFunction({ methodName: 'storage_withdraw', args });
+	}
+
+	/**
+	 * STEP 2..3/3 FOR WITHDRAW -
+	 *  - WITHDRAW ALL USER LIQUIDITY WITH VAULT FROM REF SMART CONTRACT
+	 *  - USER GET THE WITHDRAW OF WRAP NEAR FROM VAULT TO USER WALLET (LAST STEP OF WITHDRAW)
+	 * @description User have liquidity added in pool thought vault smart contract, so this function will withdraw all this liquidity
+	 * @description But will not withdraw from vault to user wallet
+	 * @description User have some amount in wNear with vault, so this will withdraw to user wallet
+	 * @description These wNear will be converted to Near.
+	 */
 	public async batchTransactionWithdrawAllUserLiquidityPoolAndStorage({
 		amount = '0.01',
 		account_id = this.getWallet().getAccountId(),
@@ -326,19 +316,6 @@ export default class AbstractMainVaultProviderActions extends AbstractGenericAct
 			calls,
 			response: responseBatchTransaction,
 		};
-	}
-
-	/**
-	 * STEP 3/3 FOR WITHDRAW -
-	 * USER GET THE WITHDRAW OF WRAP NEAR FROM VAULT TO USER WALLET (LAST STEP OF WITHDRAW)
-	 * @description User have some amount in wNear with vault, so this will withdraw to user wallet
-	 * @description These wNear will be converted to Near.
-	 */
-	public async withdrawUserStorage({ amount = '0' }) {
-		const args = {
-			amount: toNonDivisibleNumber(24, amount),
-		};
-		return this.execVaultContractAsCallFunction({ methodName: 'storage_withdraw', args });
 	}
 
 	/**
