@@ -1,7 +1,6 @@
+// TODO: ↓ this is necessary to avoid changing the ui
 /* eslint-disable jsx-a11y/no-static-element-interactions */
-/* eslint-disable jsx-a11y/click-events-have-key-events */
 /* eslint-disable jsx-a11y/label-has-associated-control */
-/* eslint-disable react/no-array-index-key */
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable no-alert */
 import React, { ReactChild, ReactElement, useEffect, useState, HTMLAttributes, ChangeEvent } from 'react';
@@ -10,8 +9,8 @@ import ToastNotify, { dispatchToastNotify, IToastFyProps } from '@components/Toa
 import {
 	ErrorOutline as ErrorIcon,
 	WarningOutlined as WarningIcon,
-	InfoOutlined as InfoIcon,
 	CheckBox as SuccessIcon,
+	InfoOutlined as InfoIcon,
 } from '@material-ui/icons';
 import { IDarkModeContext } from '@contexts/darkMode';
 import { useDarkMode, useNearRPCContext } from '@hooks/index';
@@ -132,13 +131,8 @@ export const CardVault = (props: ICardVaultProps): ReactElement => {
 	);
 };
 
-export const getCardTitle = (populatedSeed: IPopulatedSeed) => {
-	const poolSymbols = populatedSeed.pool.populated_tokens
-		.map((tokenData: TokenMetadata, index: number) => `${tokenData.symbol}`)
-		.join(' - ');
-	return `${poolSymbols}`;
-};
-
+export const getCardTitle = (populatedSeed: IPopulatedSeed) =>
+	populatedSeed.pool.populated_tokens.map(tokenData => tokenData.symbol).join(' - ');
 export type ICardVaultRewardFooter = {
 	populatedSeed: IPopulatedSeed;
 	useFluxusVaultContract?: boolean | undefined;
@@ -343,7 +337,6 @@ export const CardVaultRewardFooter = ({ ...FooterProps }: ICardVaultRewardFooter
 		</div>
 	);
 };
-
 export const formatMoney = (amount: number) => amount.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
 
 export const formatMoneyWithShortName = (amount: string) => {
@@ -396,7 +389,7 @@ export const DisplayerPoolCoinGroupIcons = (props: { populatedSeed: IPopulatedSe
 export const DisplayerVaultLabel = (props: { populatedSeed: IPopulatedSeed }) => {
 	const { populatedSeed } = props;
 	return (
-		<CardHeaderCoinPairsLabel data-componentname="CardHeaderCoinPairsLabel" title="Card Header coin pairs - label">
+		<CardHeaderCoinPairsLabel data-componentname="CardHeaderCoinPairsLabel">
 			<h3>
 				{getCardTitle(populatedSeed)}
 				<small
@@ -421,6 +414,7 @@ export const DisplayerVaultTotalReward = (props: { populatedSeed: IPopulatedSeed
 			totalReward += Math.abs(
 				parseFloat(
 					toReadableNumber(
+						// TODO: unnecessary parsing??
 						parseInt(`${PopulatedVault.token_details.decimals}`, 10),
 						`${PopulatedVault.total_reward}`,
 					),
@@ -431,7 +425,7 @@ export const DisplayerVaultTotalReward = (props: { populatedSeed: IPopulatedSeed
 		return totalReward;
 	})();
 	return (
-		<CardBodyEarnings data-componentname="CardBodyEarnings" title="Card Header Total Vault Rewards">
+		<CardBodyEarnings data-componentname="CardBodyEarnings">
 			<label htmlFor="Total Vault Rewards">TFRw</label>
 			<span>$ {formatMoneyWithShortName(formatMoney(totalVaultsReward))}</span>
 		</CardBodyEarnings>
@@ -455,7 +449,7 @@ export const DisplayerVaultTotalClaimedReward = (props: { populatedSeed: IPopula
 		return totalClaimedReward;
 	})();
 	return (
-		<CardBodyEarnings data-componentname="CardBodyEarnings" title="Card Header Total Vault Claimed Rewards">
+		<CardBodyEarnings data-componentname="CardBodyEarnings">
 			<label htmlFor="Total Vault Claimed Rewards">TFCRw</label>
 			<span>$ {formatMoneyWithShortName(formatMoney(totalVaultClaimedReward))}</span>
 		</CardBodyEarnings>
@@ -479,7 +473,7 @@ export const DisplayerVaultTotalUnClaimedReward = (props: { populatedSeed: IPopu
 		return totalUnclaimedReward;
 	})();
 	return (
-		<CardBodyEarnings data-componentname="CardBodyEarnings" title="Card Header Total Vault Unclaimed Rewards">
+		<CardBodyEarnings data-componentname="CardBodyEarnings">
 			<label htmlFor="Total Vault Unclaimed Rewards">TFUcRw</label>
 			<span>$ {formatMoneyWithShortName(formatMoney(totalVaultUnclaimedReward))}</span>
 		</CardBodyEarnings>
@@ -505,7 +499,6 @@ export const DisplayerVaultEarnType = (props: { populatedSeed: IPopulatedSeed })
 		</CardHeaderAPYX>
 	);
 };
-
 export const DisplayerVaultDropDownButton = () => (
 	<CardHeaderDropDown>
 		<Img
@@ -526,7 +519,7 @@ export const DisplayerCardBodyTabsHeader = (props: {
 }) => {
 	const { populatedSeed, tabs, setTabActivedState } = props;
 	return (
-		<CardBodyTabs data-componentname="CardBodyTabs" title="Card body tabs area">
+		<CardBodyTabs data-componentname="CardBodyTabs">
 			<ul>
 				{tabs.map((tab: { title: string; isActive: boolean }, index: number) => (
 					<li key={`${tab.title}-${index + 1}`} className={tab.isActive ? 'active' : ''}>
@@ -556,16 +549,21 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 	const vaultIsEnabled = () => `${populatedSeed.pool_id}` === `193`;
 
 	// Get provider from window wallet
-	const getProviderFromWindowWallet = async (msTime?: number | undefined) => {
+	const getProviderFromWindowWallet = async (msTime?: number | undefined, closeWindowWhenFinished = true) => {
 		nearWalletAsWindow._makeItWaitBeforeClose = msTime && msTime >= 500 ? msTime : 500;
-		const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<ProviderPattern>(true);
+		const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<ProviderPattern>(
+			true,
+			true,
+			closeWindowWhenFinished,
+		);
 		return windowWalletProvider.getProvider();
 	};
 	// Get vault actions from provider as window wallet
 	const getVaultActionsFromProviderAsWindow = async (
 		msTime?: number | undefined,
+		closeWindowWhenFinished = true,
 	): Promise<{ actions: AbstractMainVaultProviderActions; provider: AbstractMainProvider & MainProvider }> => {
-		const provider = await getProviderFromWindowWallet(msTime);
+		const provider = await getProviderFromWindowWallet(msTime, closeWindowWhenFinished);
 		return { actions: provider.getProviderActions().getVaultActions(), provider };
 	};
 
@@ -592,6 +590,7 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 			try {
 				window.document.querySelectorAll('body')[0].style.opacity = '0.3';
 				setTimeout(() => {
+					// TODO: use location.reload()
 					window.location.href = `${window.location.href}?loggedin=true`;
 				}, 2500);
 			} catch (e: any) {
@@ -638,17 +637,16 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 			totalExecutionTime: 0,
 		};
 		try {
-			const provider = await getVaultActionsFromProviderAsWindow();
+			const provider = await getVaultActionsFromProviderAsWindow(1500, false);
 			const vaultActions = provider.actions;
 			vaultActions.withdrawAllUserStakedLP<{}>({});
 			const walletResponse = await nearWalletAsWindow.getWalletCallback();
 			response.data = walletResponse || {};
-			await makeWait(2000);
 			return response;
 		} catch (e: any) {
+			response.toast.Icon = InfoIcon;
 			response.toast.title = 'Wallet was blocked by browser. Please, allow pop-up window and try again.';
 			response.message = response.toast.title;
-			response.toast.Icon = ErrorIcon;
 			response.success = false;
 			return response;
 		}
@@ -667,28 +665,21 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 			totalExecutionTime: 0,
 		};
 		try {
-			await makeWait(1500);
+			await makeWait(2000);
 			try {
-				const provider = await getVaultActionsFromProviderAsWindow();
+				const provider = await getVaultActionsFromProviderAsWindow(1500, false);
 				const vaultActions = provider.actions;
 				vaultActions.withdrawAllUserLiquidityPool<{}>({ account_id: getWallet().getAccountId() });
 				const walletResponse = await nearWalletAsWindow.getWalletCallback();
 				response.data = walletResponse || {};
-				makeWait();
 				return response;
 			} catch (e: any) {
+				response.toast.Icon = InfoIcon;
 				response.toast.title = 'Wallet was blocked by browser. Please, allow pop-up window and try again.';
 				response.message = response.toast.title;
-				response.toast.Icon = ErrorIcon;
 				response.success = false;
 				return response;
 			}
-			// await makeWait(1500);
-			// response.data = await ProviderPattern.getProviderInstance()
-			// 	.getProviderActions()
-			// 	.getVaultActions()
-			// 	.withdrawAllUserLiquidityPool({});
-			// return response;
 		} catch (e: any) {
 			response.success = false;
 			response.message = e?.message || 'Unknow error to Withdraw Reward Tokens';
@@ -739,7 +730,7 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 			totalExecutionTime: 0,
 		};
 		try {
-			const provider = await getVaultActionsFromProviderAsWindow();
+			const provider = await getVaultActionsFromProviderAsWindow(1000, true);
 			const vaultActions = provider.actions;
 			vaultActions.batchTransactionWithdrawAllUserLiquidityPoolAndStorage({ amount });
 			const walletResponse = await nearWalletAsWindow.getWalletCallback();
@@ -755,7 +746,7 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 
 	const doWithdrawAll = async () => {
 		// DEBUG - Dev debug helper
-		const consoleLogToMe = (step: number, stepName: string, data: any, totalSteps: number = 3) => {
+		const consoleLogToMe = (step: number, stepName: string, data: any, totalSteps = 3) => {
 			const title = `step ${stepName} (${step}/${totalSteps})`;
 			console.log(`========== Stake ${title} Start ==========`);
 			console.log(title, data);
@@ -772,7 +763,7 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 		getLogForUserBalanceFromVault();
 
 		// Withdraw_all (step 1/3)
-		// UX notifyer
+		// UX notifier
 		dispatchToastNotify({ title: 'Step 1/3 (Withdraw LP from vault started)', Icon: SuccessIcon });
 		const withdrawAllResponse = await withdrawAll();
 		consoleLogToMe(1, 'withdrawAllResponse', withdrawAllResponse);
@@ -819,7 +810,7 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 
 		// DEBUG - Get Log balance of account in VAULT
 		getLogForUserBalanceFromVault();
-		dispatchToastNotify({ title: 'Successfull withdraw', Icon: SuccessIcon });
+		dispatchToastNotify({ title: 'Successful withdraw', Icon: SuccessIcon });
 
 		return 'All done';
 	};
@@ -838,11 +829,7 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 				useFluxusVaultContractState={useFluxusVaultContract}
 			/>
 			<DisplaySeparator />
-			<DisplayCardBodyVaultInfo
-				data-component="DisplayCardBodyVaultInfo"
-				populatedSeed={populatedSeed}
-				useFluxusVaultContractState={useFluxusVaultContract}
-			/>
+			<DisplayCardBodyVaultInfo data-component="DisplayCardBodyVaultInfo" populatedSeed={populatedSeed} />
 			<div
 				style={{
 					display: 'flex',
@@ -859,7 +846,7 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 						width: '100%',
 						margin: '30px 0 10px 0',
 						height: '50px',
-						opacity: `${!vaultIsEnabled() ? '0.4' : '1'}`,
+						opacity: vaultIsEnabled() ? 1 : 0.4,
 					}}
 					onClick={() => {
 						if (getWallet().isSignedIn()) {
@@ -871,7 +858,7 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 					{vaultIsEnabled() ? (
 						<>{(getWallet().isSignedIn() && 'Stake') || 'Connect Wallet'} </>
 					) : (
-						<>Farm not enabled to auto-compound yet</>
+						<>Auto-compound is not enabled for this farm yet.</>
 					)}
 				</ButtonPrimary>
 				{vaultIsEnabled() && getWallet().isSignedIn() && (
@@ -998,9 +985,9 @@ export const DisplayerCardBodyRewards = (props: {
 				<img data-type="icon" src={WhatThisMeanIcon} width="16px" height="16px" alt="Earnings in near" />
 			</div>
 			<div data-type="rewardsList">
-				{rewardsStateList.map((reward, index: number) => (
+				{rewardsStateList.map((reward, index) => (
 					<img
-						key={`${reward.reward_token_id}-${index}`}
+						key={reward.reward_token_id + +index}
 						className="coinIcon"
 						src={reward.reward_token_metadata.icon}
 						width="28px"
@@ -1037,52 +1024,37 @@ export const DisplayerCardBodyCompountInfo = (props: {
 	);
 };
 
-export const DisplayCardBodyVaultInfo = (props: {
-	populatedSeed: IPopulatedSeed;
-	useFluxusVaultContractState: boolean;
-}) => {
-	const nearRPCContext = useNearRPCContext();
-	const { populatedSeed, useFluxusVaultContractState } = props;
-
+export const DisplayCardBodyVaultInfo = (props: { populatedSeed: IPopulatedSeed }) => {
+	const { populatedSeed } = props;
 	return (
 		<CardBodyVaultInfo data-componentname="CardBodyVaultInfo">
 			<div data-type="vault-item">
-				<label>APY</label>
-				<span>126 %</span>
+				<label>APY</label> <span>126 %</span>{' '}
 			</div>
 			<div data-type="vault-item">
-				<label>Daily</label>
-				<span>0.18%</span>
+				<label>Daily</label> <span>0.18%</span>{' '}
 			</div>
 			<div data-type="vault-item">
 				<label>TVL</label>
-				<span>{`$${formatMoneyWithShortName(formatMoney(Number(populatedSeed.pool.tvl)))}`}</span>
+				<span>{`$${formatMoneyWithShortName(formatMoney(+populatedSeed.pool.tvl))}`}</span>
 			</div>
 		</CardBodyVaultInfo>
 	);
 };
-
 export const DisplayerCardBodyTabBodyForInfo = (props: { populatedSeed: IPopulatedSeed; isActive: boolean }) => {
 	const { populatedSeed, isActive } = props;
 	return (
 		<>
 			<CardBodyTabsContentItem data-componentname="CardBodyTabsContentItem" className={isActive ? 'active' : ''}>
 				<h1>ABOUT</h1>
-				<p>
-					Deposit {getCardTitle(populatedSeed)} LP Token into Fluxus Vault to start to earn reward tokens
-					including UXU.
-				</p>
-				<p>The deposit and staking all will happen in just one transaction.</p>
+				<p>Deposit {getCardTitle(populatedSeed)} LP Token into Fluxus Vault to start earning tokens and UXU.</p>
+				<p>The deposit and staking occur in a single transaction.</p>
 				<p>
 					Earn shares of{' '}
-					{((Vaults: Array<IVaultData>) =>
-						Vaults.map((Vault: IVaultData) => (
-							<span key={`${Vault.farm_id}-${Vault.token_details.id}`}>
-								{Vault.token_details.symbol}
-								{` `}
-							</span>
-						)))(populatedSeed.populated_farms)}{' '}
-					and UXU rewards by depositing <span>{getCardTitle(populatedSeed)}</span>.{' '}
+					{populatedSeed.populated_farms.map((vault: IVaultData) => (
+						<span key={`${vault.farm_id}-${vault.token_details.id}`}>{vault.token_details.symbol}</span>
+					))}{' '}
+					and UXU by depositing <span>{getCardTitle(populatedSeed)}</span>.
 				</p>
 				<ul>
 					<li>
@@ -1095,9 +1067,9 @@ export const DisplayerCardBodyTabBodyForInfo = (props: { populatedSeed: IPopulat
 					<li>
 						<a href="#Platform">Pool</a>
 						<ul>
-							{populatedSeed.pool.populated_tokens.map((Token: TokenMetadata, index: number) => (
+							{populatedSeed.pool.populated_tokens.map((token, index) => (
 								<li
-									key={`${Token.id}-${index}`}
+									key={token.id + +index}
 									style={{
 										display: 'flex',
 										justifyContent: 'center',
@@ -1105,13 +1077,13 @@ export const DisplayerCardBodyTabBodyForInfo = (props: { populatedSeed: IPopulat
 										flexDirection: 'row',
 									}}>
 									<img
-										src={Token.icon}
-										alt={`Token ${Token.symbol} - icon`}
-										title={`Token ${Token.symbol} - icon`}
+										src={token.icon}
+										alt={`Token ${token.symbol} - icon`}
+										title={`Token ${token.symbol} - icon`}
 										width={28}
 									/>
 									&nbsp;
-									{` ${Token.symbol}`}
+									{` ${token.symbol}`}
 								</li>
 							))}
 						</ul>
@@ -1119,9 +1091,9 @@ export const DisplayerCardBodyTabBodyForInfo = (props: { populatedSeed: IPopulat
 					<li>
 						<a href="#rewards">Vault Rewards</a>
 						<ul>
-							{populatedSeed.populated_farms.map((Vault: IVaultData, index: number) => (
+							{populatedSeed.populated_farms.map((vault, index) => (
 								<li
-									key={`${Vault.farm_id}-${index}`}
+									key={vault.farm_id + +index}
 									style={{
 										display: 'flex',
 										justifyContent: 'center',
@@ -1129,13 +1101,13 @@ export const DisplayerCardBodyTabBodyForInfo = (props: { populatedSeed: IPopulat
 										flexDirection: 'row',
 									}}>
 									<img
-										src={Vault.token_details.icon}
-										alt={`Token ${Vault.token_details.symbol} - icon`}
-										title={`Token ${Vault.token_details.symbol} - icon`}
+										src={vault.token_details.icon}
+										alt={`Token ${vault.token_details.symbol} - icon`}
+										title={`Token ${vault.token_details.symbol} - icon`}
 										width={28}
 									/>
 									&nbsp;
-									{` ${Vault.token_details.symbol}`}
+									{vault.token_details.symbol}
 								</li>
 							))}
 						</ul>
@@ -1318,7 +1290,8 @@ const ModalUnstakeContent = (props: {
 						position: 'absolute',
 						right: '15px',
 					}}
-					onClick={(ev: any) => {
+					onKeyDown={() => null}
+					onClick={() => {
 						setUnstakeInputValue(toReadableNumber(24, `${totalStaked}`));
 					}}>
 					MAX
@@ -1527,7 +1500,8 @@ const ModalStakeContent = (props: {
 						position: 'absolute',
 						right: '1px',
 					}}
-					onClick={(ev: any) => {
+					onKeyDown={() => null}
+					onClick={() => {
 						setStakeInputValue(toReadableNumber(24, `${totalAvailableToStake}`));
 					}}>
 					MAX
@@ -1554,14 +1528,18 @@ const ModalStakeFooter = (props: {
 		});
 	};
 
-	const getProviderFromWindowWallet = async (msTime?: number | undefined) => {
+	const getProviderFromWindowWallet = async (msTime?: number | undefined, closeWindowWhenFinished = true) => {
 		type IProviderFromWindowWalletResponse = { windowProvider: IWalletAsWindow };
 		const wallet = { windowProvider: {} } as IProviderFromWindowWalletResponse;
 		Object.defineProperty(wallet, 'windowProvider', { value: nearWalletAsWindow, writable: true });
 		const walletProvider = wallet.windowProvider;
 
 		walletProvider._makeItWaitBeforeClose = msTime && msTime >= 500 ? msTime : 500;
-		const windowWalletProvider = await walletProvider.getWindowWalletRPC<ProviderPattern>(true);
+		const windowWalletProvider = await walletProvider.getWindowWalletRPC<ProviderPattern>(
+			true,
+			true,
+			closeWindowWhenFinished,
+		);
 		return { provider: windowWalletProvider.getProvider(), wallet: walletProvider };
 	};
 
@@ -1635,7 +1613,7 @@ const ModalStakeFooter = (props: {
 			finishedTime: 0,
 			totalExecutionTime: 0,
 		};
-		const { provider, wallet } = await getProviderFromWindowWallet(1500);
+		const { provider, wallet } = await getProviderFromWindowWallet(1500, false);
 		const vaultActions = provider.getProviderActions().getVaultActions();
 		try {
 			vaultActions.batchTransactionDepositAndWrapNearBalance({ amountToDeposit: `${depositAmount || '0'}` });
@@ -1674,28 +1652,23 @@ const ModalStakeFooter = (props: {
 			await makeWait(3000);
 			console.log('waitted to start process');
 			if (Number(balance.available) < 0.000000000001) {
-				throw new Error(`Vault not finished yet`);
+				throw new Error(`Vault do not have the available balance yet. Please, try again in a few seconds`);
 			}
 			const args = { account_id: getWallet().getAccountId() };
-			// try {
-			// 	const { provider, wallet } = await getProviderFromWindowWallet(1500);
-			// 	const vaultActions = provider.getProviderActions().getVaultActions();
-			// 	await vaultActions.addToVault(args);
-			// 	const walletResponse = await wallet.getWalletCallback();
-			// 	response.data = walletResponse || {};
-			// 	return response;
-			// } catch (e: any) {
-			// 	console.log('Add to vault error from window block');
-			// 	dispatchToastNotify({
-			// 		title: `Step 3/3 (Add to vault) was impediated to work with wallet as window. Trying now as background wallet`,
-			// 		Icon: SuccessIcon,
-			// 	});
-			// }
-			response.data = await ProviderPattern.getProviderInstance()
-				.getProviderActions()
-				.getVaultActions()
-				.addToVault(args);
-			return response;
+			try {
+				const { provider, wallet } = await getProviderFromWindowWallet(1500, true);
+				const vaultActions = provider.getProviderActions().getVaultActions();
+				vaultActions.addToVault(args);
+				const walletResponse = await wallet.getWalletCallback();
+				response.data = walletResponse || {};
+				return response;
+			} catch (e: any) {
+				console.error(e);
+				response.success = false;
+				response.message = `Step 3/3 (Add to vault) was stopped from browser popup block. Please, enable the popup into your browser and try again.`;
+				response.toast = { Icon: InfoIcon, title: response.message };
+				return response;
+			}
 		} catch (e: any) {
 			console.error(e);
 			response.success = false;

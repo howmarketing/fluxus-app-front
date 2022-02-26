@@ -76,7 +76,7 @@ const wallet: NextPage = function () {
 			<Landing
 				background={{
 					backgroundImage: 'bg-home-min.jpg',
-					backgroundColor: '#f9f8fa',
+					backgroundColor: '#100317',
 				}}>
 				<>
 					<div

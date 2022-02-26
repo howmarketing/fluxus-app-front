@@ -25,14 +25,22 @@ export const nearWalletAsWindow = {
 	_makeItWaitBeforeClose: 2000 as number,
 	debug: true,
 
-	async getWindowWalletRPC<T extends unknown>(returnRPCFromProviderPattern = false, canRetry = true): Promise<T> {
+	async getWindowWalletRPC<T extends unknown>(
+		returnRPCFromProviderPattern = false,
+		canRetry = true,
+		closeWhenFinished = true,
+	): Promise<T> {
 		const $this = this;
 		try {
 			const providerKey = `${returnRPCFromProviderPattern ? 'providerPattern' : 'nearRPC'}`;
-			const setupRersponse = await $this._setUp();
+			const setupRersponse = await $this._setUp(closeWhenFinished);
 			if (!setupRersponse.success) {
 				if (canRetry) {
-					return nearWalletAsWindow.getWindowWalletRPC<T>(returnRPCFromProviderPattern, false);
+					return nearWalletAsWindow.getWindowWalletRPC<T>(
+						returnRPCFromProviderPattern,
+						false,
+						closeWhenFinished,
+					);
 				}
 				throw new Error(setupRersponse.message);
 			}
@@ -41,20 +49,32 @@ export const nearWalletAsWindow = {
 				walletWindowDOM = $this._getWalletWindow();
 				if (typeof $this.walletWindowReference === 'undefined' || $this.walletWindowReference === null) {
 					if (canRetry) {
-						return nearWalletAsWindow.getWindowWalletRPC<T>(returnRPCFromProviderPattern, false);
+						return nearWalletAsWindow.getWindowWalletRPC<T>(
+							returnRPCFromProviderPattern,
+							false,
+							closeWhenFinished,
+						);
 					}
 					throw new Error('walletWindowReference is undefined');
 				}
 				if (typeof walletWindowDOM === 'undefined' || walletWindowDOM === null) {
 					if (canRetry) {
-						return nearWalletAsWindow.getWindowWalletRPC<T>(returnRPCFromProviderPattern, false);
+						return nearWalletAsWindow.getWindowWalletRPC<T>(
+							returnRPCFromProviderPattern,
+							false,
+							closeWhenFinished,
+						);
 					}
 					throw new Error('walletWindowDOM is undefined');
 				}
 				walletWindowDOM.focus();
 			} catch (e: any) {
 				if (canRetry) {
-					return nearWalletAsWindow.getWindowWalletRPC<T>(returnRPCFromProviderPattern, false);
+					return nearWalletAsWindow.getWindowWalletRPC<T>(
+						returnRPCFromProviderPattern,
+						false,
+						closeWhenFinished,
+					);
 				}
 				throw new Error(`Get wallet window error: ${e?.message || 'unknown error'}`);
 			}
@@ -94,15 +114,15 @@ export const nearWalletAsWindow = {
 
 			if (typeof rpcProvider === 'undefined') {
 				try {
-					if ($this._verifyIfWalletWindowIsOpen()) {
-						walletWindowDOM.close();
+					if ($this._verifyIfWalletWindowIsOpen() && closeWhenFinished) {
+						walletWindowDOM.close(); // close window
 					}
 				} catch (e: any) {
 					throw new Error(`Failed to close the window`);
 				}
 				throw new Error(`Wallet get timed out while try to get NEAR RPC Provider. `);
 			}
-			$this._watchTransactionCallback();
+			$this._watchTransactionCallback(closeWhenFinished);
 			return rpcProvider;
 		} catch (e: any) {
 			throw new Error(`${e?.message || 'Unknown error'}`);
@@ -148,12 +168,12 @@ export const nearWalletAsWindow = {
 		}
 	},
 
-	async _setUp() {
+	async _setUp(closeWhenFinished = true) {
 		const $this = this;
 		try {
-			await $this._resetProps();
+			await $this._resetProps(closeWhenFinished);
 			await $this._defineOpnerWindow();
-			await $this._defineWalletWindow();
+			await $this._defineWalletWindow(closeWhenFinished);
 			return {
 				success: true,
 				message: `Wallet setted successfully.`,
@@ -168,7 +188,7 @@ export const nearWalletAsWindow = {
 		}
 	},
 
-	async _resetProps() {
+	async _resetProps(closeWhenFinished = true) {
 		const $this = this;
 		try {
 			$this.callbackData = {
@@ -182,11 +202,20 @@ export const nearWalletAsWindow = {
 			} as ICallbackData;
 			// $this._makeItWaitBeforeClose = 800;
 			$this.opnerWindow = {} as Window;
-			$this.walletWindowReference = {} as Window;
+			$this.walletWindowReference =
+				closeWhenFinished || typeof $this.walletWindowReference.closed === 'undefined'
+					? ({} as Window)
+					: $this.walletWindowReference;
+
 			try {
 				if ($this._verifyIfWalletWindowIsOpen()) {
-					$this.walletWindowReference?.focus();
-					$this.walletWindowReference?.close();
+					if (!closeWhenFinished) {
+						$this.opnerWindow?.focus();
+					}
+					if (closeWhenFinished) {
+						$this.walletWindowReference?.focus();
+						$this.walletWindowReference?.close(); // close window
+					}
 				}
 				await $this._defineOpnerWindow();
 			} catch (e: any) {
@@ -208,21 +237,25 @@ export const nearWalletAsWindow = {
 		}
 	},
 
-	async _defineWalletWindow() {
+	async _defineWalletWindow(closeWhenFinished = true) {
 		const $this = this;
 		try {
 			if (!$this._verifyIfWalletWindowIsOpen()) {
-				await $this._resetProps();
+				await $this._resetProps(closeWhenFinished);
 				await new Promise<boolean>((resolve, reject) => {
 					setTimeout(() => resolve(true), 3500);
 				});
 			}
+			const windowDimensions = {
+				width: 480,
+				height: 755,
+				top: 288,
+				left: Number(window.screen.availWidth) - 548,
+			};
 			$this.walletWindowReference = $this.opnerWindow.open(
 				'wallet',
 				'Near Wallet',
-				`popup=yes,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=no,left=${
-					window.screen.availWidth / 2 - 200
-				},top=65,width=400,height=740`,
+				`popup=yes,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=no,left=${windowDimensions.left},top=${windowDimensions.top},width=${windowDimensions.width},height=${windowDimensions.height}`,
 			) as Window;
 			await makeWait(2000);
 		} catch (e: any) {
@@ -234,7 +267,7 @@ export const nearWalletAsWindow = {
 		}
 	},
 
-	async _watchTransactionCallback() {
+	async _watchTransactionCallback(closeWhenFinished = true) {
 		const startTime = new Date().getTime();
 		let finishedTime = new Date().getTime();
 		let totalExecutionTime = (finishedTime - startTime) / 1000;
@@ -248,14 +281,14 @@ export const nearWalletAsWindow = {
 			totalExecutionTime,
 			executionsCount: 0 as number,
 		};
-		let walletRedirectAlreadyHasHappend: boolean = false;
+		let walletRedirectAlreadyHasHappened: boolean = false;
 		let stopWatchTimeout = setTimeout(() => {});
 		let watchInterval = setInterval(() => {});
 		let executionsCount: number = 0;
-		const stopWatch = async (interval: NodeJS.Timeout, timeout: NodeJS.Timeout, windowRederence: Window) => {
+		const stopWatch = async (interval: NodeJS.Timeout, timeout: NodeJS.Timeout) => {
 			clearInterval(interval);
 			clearTimeout(timeout);
-			walletRedirectAlreadyHasHappend = true;
+			walletRedirectAlreadyHasHappened = true;
 			callback.finished = true;
 			callback.finishedTime = finishedTime;
 			callback.totalExecutionTime = totalExecutionTime;
@@ -267,14 +300,17 @@ export const nearWalletAsWindow = {
 				);
 			}
 			await $this._makeItWait($this._makeItWaitBeforeClose);
-			const windowIsClosed = $this._verifyIfWalletWindowIsOpen();
+			const windowIsOpen = $this._verifyIfWalletWindowIsOpen();
 			if ($this.debug) {
-				console.log(`Wallet it is ${!windowIsClosed ? '' : 'not'}oppened, lets close that.`);
+				console.log(`Wallet it is ${!windowIsOpen ? '' : 'not'}oppened, lets close that.`);
 			}
 			try {
-				// verificar
-				if (windowIsClosed) {
-					$this.walletWindowReference.close();
+				// If wallet is open and can be closed at the end of the transaction, close it immediately
+				if ($this.debug) {
+					console.log({ windowIsOpen, closeWhenFinished });
+				}
+				if (windowIsOpen && closeWhenFinished) {
+					$this.walletWindowReference.close(); // close window
 				}
 			} catch (e: any) {
 				console.error(e);
@@ -285,7 +321,7 @@ export const nearWalletAsWindow = {
 			await $this._makeItWait(200);
 			$this.callbackData = callback;
 			await $this._makeItWait(800);
-			$this._resetProps();
+			$this._resetProps(closeWhenFinished);
 		};
 
 		try {
@@ -301,7 +337,7 @@ export const nearWalletAsWindow = {
 					if ($this.debug) {
 						console.log(`Cannot watch already finished wallet callback.`);
 					}
-					stopWatch(watchInterval, stopWatchTimeout, $this.walletWindowReference);
+					stopWatch(watchInterval, stopWatchTimeout);
 					return;
 				}
 				try {
@@ -313,7 +349,7 @@ export const nearWalletAsWindow = {
 							callback.success = false;
 							callback.message = `Unexpected closed Wallet.`;
 							callback.data = { walletRef: $this.walletWindowReference };
-							stopWatch(watchInterval, stopWatchTimeout, $this.walletWindowReference);
+							stopWatch(watchInterval, stopWatchTimeout);
 							return;
 						}
 					} catch (e: any) {
@@ -331,7 +367,7 @@ export const nearWalletAsWindow = {
 								stack: e.stack,
 							});
 						}
-						stopWatch(watchInterval, stopWatchTimeout, $this.walletWindowReference);
+						stopWatch(watchInterval, stopWatchTimeout);
 						return;
 					}
 					// 2 - Verify if exist the location and search window properties exist, if it is not, its mean that wallet window did not finish yout load yet.
@@ -342,7 +378,7 @@ export const nearWalletAsWindow = {
 						 */
 						if (!(typeof $this._getWalletWindow()?.location?.search === 'string')) {
 							if ($this.debug) {
-								console.log('280');
+								console.log('LINE: 381');
 							}
 							return;
 						}
@@ -350,18 +386,18 @@ export const nearWalletAsWindow = {
 						// 3 - If this verification catch some error, it probably means that wallet window already has been redirect to near wallet url.
 						/**
 						 * The code 18 means that we are trying to get crossOrigin informations, so for us, it means that user currently are in NEAR wallet url.
-						 * So, if we catch this error, we should set the variable walletRedirectAlreadyHasHappend to true
+						 * So, if we catch this error, we should set the variable walletRedirectAlreadyHasHappened to true
 						 */
 						if (e?.code === 18) {
-							if (walletRedirectAlreadyHasHappend) {
+							if (walletRedirectAlreadyHasHappened) {
 								if ($this.debug) {
 									console.log(
-										'User still in Near Wallet management. Knowedge by code error 18 with walletRedirectAlreadyHasHappend equal to true.',
+										'User still in Near Wallet management. Knowedge by code error 18 with walletRedirectAlreadyHasHappened equal to true.',
 									);
 								}
 								return;
 							}
-							walletRedirectAlreadyHasHappend = true;
+							walletRedirectAlreadyHasHappened = true;
 							if ($this.debug) {
 								console.log(
 									`User are managing your near wallet permissions. Waiting to get back to our host location.`,
@@ -389,10 +425,10 @@ export const nearWalletAsWindow = {
 						if ($this.debug) {
 							console.log('===== unexpected error =====');
 						}
-						stopWatch(watchInterval, stopWatchTimeout, $this.walletWindowReference);
+						stopWatch(watchInterval, stopWatchTimeout);
 					}
 
-					if (!walletRedirectAlreadyHasHappend) {
+					if (!walletRedirectAlreadyHasHappened) {
 						if (executionsCount < 8) {
 							if ($this.debug) {
 								console.log(`Wallet redirection could not be retrived yet.`);
@@ -407,7 +443,7 @@ export const nearWalletAsWindow = {
 						callback.success = true;
 						callback.message = messageDorWalletWithoutNearLinkVisitHappend;
 						callback.data = {};
-						stopWatch(watchInterval, stopWatchTimeout, $this.walletWindowReference);
+						stopWatch(watchInterval, stopWatchTimeout);
 						return;
 					}
 					if ($this.debug) {
@@ -419,7 +455,7 @@ export const nearWalletAsWindow = {
 							callback.success = true;
 							callback.message = `Wallet successfully finished execution.`;
 							callback.data = { executionsCount };
-							stopWatch(watchInterval, stopWatchTimeout, $this.walletWindowReference);
+							stopWatch(watchInterval, stopWatchTimeout);
 							return;
 						}
 					} catch (e: any) {
@@ -453,7 +489,7 @@ export const nearWalletAsWindow = {
 						console.error(e);
 					}
 
-					stopWatch(watchInterval, stopWatchTimeout, $this.walletWindowReference);
+					stopWatch(watchInterval, stopWatchTimeout);
 					return;
 				} catch (e: any) {
 					console.error(e);
@@ -467,8 +503,7 @@ export const nearWalletAsWindow = {
 				callback.success = false;
 				callback.message = `Wallet timeout for transation callback.`;
 				callback.data = { startTime, finishedTime, totalExecutionTime };
-				stopWatch(watchInterval, stopWatchTimeout, $this.walletWindowReference);
-				stopWatch(watchInterval, stopWatchTimeout, $this.walletWindowReference);
+				stopWatch(watchInterval, stopWatchTimeout);
 			}, 600000);
 		} catch (e: any) {
 			console.error(e);
@@ -483,8 +518,7 @@ export const nearWalletAsWindow = {
 				finishedTime,
 				totalExecutionTime,
 			};
-			stopWatch(watchInterval, stopWatchTimeout, $this.walletWindowReference);
-			stopWatch(watchInterval, stopWatchTimeout, $this.walletWindowReference);
+			stopWatch(watchInterval, stopWatchTimeout);
 		}
 	},
 

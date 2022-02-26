@@ -146,10 +146,7 @@ const FarmList: React.FC = function () {
 				populateSeed.pool = populatedPool;
 				populateSeed.token_from = await ftGetTokenMetadata(populateSeed.pool.token_account_ids[0]);
 				populateSeed.token_to = await ftGetTokenMetadata(populateSeed.pool.token_account_ids[1]);
-				populateSeed.user_staked_amount =
-					typeof userStakedList[populateSeed.seed_id] !== 'undefined'
-						? userStakedList[populateSeed.seed_id]
-						: undefined;
+				populateSeed.user_staked_amount = userStakedList[populateSeed.seed_id] || undefined;
 				return populateSeed;
 			}),
 		);
