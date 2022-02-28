@@ -4,12 +4,12 @@ import Switch from 'react-switch';
 import { useNearRPCContext } from '@hooks/index';
 import { toReadableNumber } from '@utils/numbers';
 import { IUserListRewards } from '@workers/workerNearPresets';
-import { ftGetTokenMetadata, TokenMetadata } from '@services/ft-contract';
+import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { nearWalletAsWindow } from '@utils/nearWalletAsWindow';
 import ButtonPrimary from '@components/ButtonPrimary';
 import { IPopulatedReward } from '@components/CardRewards';
-import { REF_FARM_CONTRACT_ID } from '@services/near';
 import { INearRPCContext } from '@contexts/nearData/nearRPCData';
+import ProviderPattern from '@ProviderPattern/index';
 import { CardURewardsStyle, SwitchArea, SwitchAreaTitle, SwitchAreaTitleTag, WrapCenterView } from './style';
 
 export type IUserDeposit = { amount: number | string } & TokenMetadata;
@@ -72,7 +72,11 @@ export const CardUserRewards: React.FC<CardUserRewardsProps> = function ({ ...pr
 		const depositAmounts = Object.values(deposits);
 		const depositsPopulated = await Promise.all(
 			Object.keys(deposits).map(async (tokenId: string, index: number) => {
-				const tokenMetaData = await ftGetTokenMetadata(tokenId);
+				const tokenMetaData = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getFTContractActions()
+					.ftGetTokenMetadata(tokenId);
 				return {
 					amount: depositAmounts[index],
 					...tokenMetaData,
@@ -92,7 +96,11 @@ export const CardUserRewards: React.FC<CardUserRewardsProps> = function ({ ...pr
 		const rewardsFormated: Array<IPopulatedReward> = await Promise.all(
 			rewardsEntries.map(async (userRewardData: Array<string>): Promise<IPopulatedReward> => {
 				const [userRewardTokenId, userRewardValue] = userRewardData;
-				const tokenMetaData = await ftGetTokenMetadata(userRewardTokenId);
+				const tokenMetaData = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getFTContractActions()
+					.ftGetTokenMetadata(userRewardTokenId);
 				const rewardName = `${tokenMetaData.name}`
 					.trim()
 					.split(' ')

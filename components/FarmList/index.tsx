@@ -4,17 +4,15 @@ import React, { useEffect, useState, ReactElement } from 'react';
 import Switch from 'react-switch';
 import { useNearRPCContext } from '@hooks/index';
 import { IFarmData, ISeedInfo, PoolDetails } from '@workers/workerNearPresets';
-import { ftGetTokenMetadata, TokenMetadata } from '@services/ft-contract';
-import { getSharesInPool } from '@services/pool';
-import { getRewardByTokenId, getStakedListByAccountId, getUnclaimedReward } from '@services/farm';
+import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import BoxGhost from '@components/BoxGhost';
 import CardFarm from '@components/CardFarm/index';
 import { ICardFarmState } from '@components/CardFarm';
 import CircularProgress from '@material-ui/core/CircularProgress';
-import { checkTransaction } from '@services/swap';
 import { toReadableNumber } from '@utils/numbers';
-import { getPoolTvlFiatPrice, IPoolFiatPrice } from '@services/api';
+import { IPoolFiatPrice } from '@ProviderPattern/models/Actions/AbstractMainProviderAPI';
 import { IPopulatedPoolExtraDataToken, IPopulatedPoolExtraDataVolume } from '@components/VaultList';
+import ProviderPattern from '@ProviderPattern/index';
 import { WrapBox, SwitchArea, SwitchAreaTitle, SwitchAreaTitleTag, ProgressArea } from './styles';
 
 export type IPopulatedPool = PoolDetails & { populated_tokens: Array<TokenMetadata>; shares_lptoken: any };
@@ -85,7 +83,11 @@ const FarmList: React.FC = function () {
 
 	const getPopulatedSeeds = async () => {
 		// get all user staked LP Tokens
-		const userStakedList = await getStakedListByAccountId({ useFluxusFarmContract: useFluxusFarmContractState });
+		const userStakedList = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFarmActions()
+			.getStakedListByAccountId({ useFluxusFarmContract: useFluxusFarmContractState });
 		// Object with key as farm_id and value as farm data
 		const farmsObject: Record<any, any> = {};
 		// Array of all object farmData
@@ -111,17 +113,21 @@ const FarmList: React.FC = function () {
 					seed.farms.map(async (farmID: string, index: number) => {
 						let farm = {} as IFarmData;
 						farm = farmsObject[farmID];
-						farm.token_details = await ftGetTokenMetadata(farm.reward_token, false);
-						farm.user_reward = await getRewardByTokenId(
-							farm.reward_token,
-							undefined,
-							useFluxusFarmContractState,
-						);
-						farm.user_unclaimed_reward = await getUnclaimedReward(
-							farmID,
-							undefined,
-							useFluxusFarmContractState,
-						);
+						farm.token_details = await ProviderPattern.getInstance()
+							.getProvider()
+							.getProviderActions()
+							.getFTContractActions()
+							.ftGetTokenMetadata(farm.reward_token, false);
+						farm.user_reward = await ProviderPattern.getInstance()
+							.getProvider()
+							.getProviderActions()
+							.getFarmActions()
+							.getRewardByTokenId(farm.reward_token, undefined, useFluxusFarmContractState);
+						farm.user_unclaimed_reward = await ProviderPattern.getInstance()
+							.getProvider()
+							.getProviderActions()
+							.getFarmActions()
+							.getUnclaimedReward(farmID, undefined, useFluxusFarmContractState);
 						farmsObject[farmID] = farm;
 						return farm;
 					}),
@@ -133,19 +139,39 @@ const FarmList: React.FC = function () {
 				})(populateSeed.seed_id);
 				// set the pool ID "12" at the populated seed object
 				populateSeed.pool_id = poolID;
-				const poolTvlFiatPrice = await getPoolTvlFiatPrice({ pool_id: poolID });
+				const poolTvlFiatPrice = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getAPIActions()
+					.getPoolTvlFiatPrice({ pool_id: poolID });
 				const populatedPool = { ...poolTvlFiatPrice } as IPoolFiatPrice &
 					IPopulatedPoolExtraDataToken &
 					IPopulatedPoolExtraDataVolume;
 				populatedPool.populated_tokens = await Promise.all(
 					populatedPool.token_account_ids.map(async (token_id: string) =>
-						ftGetTokenMetadata(token_id, false),
+						ProviderPattern.getInstance()
+							.getProvider()
+							.getProviderActions()
+							.getFTContractActions()
+							.ftGetTokenMetadata(token_id, false),
 					),
 				);
-				populatedPool.shares_lptoken = await getSharesInPool({ pool_id: poolID });
+				populatedPool.shares_lptoken = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getPoolActions()
+					.getSharesInPool({ pool_id: poolID });
 				populateSeed.pool = populatedPool;
-				populateSeed.token_from = await ftGetTokenMetadata(populateSeed.pool.token_account_ids[0]);
-				populateSeed.token_to = await ftGetTokenMetadata(populateSeed.pool.token_account_ids[1]);
+				populateSeed.token_from = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getFTContractActions()
+					.ftGetTokenMetadata(populateSeed.pool.token_account_ids[0]);
+				populateSeed.token_to = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getFTContractActions()
+					.ftGetTokenMetadata(populateSeed.pool.token_account_ids[1]);
 				populateSeed.user_staked_amount = userStakedList[populateSeed.seed_id] || undefined;
 				return populateSeed;
 			}),
@@ -175,7 +201,11 @@ const FarmList: React.FC = function () {
 		const transactions = getTrasactionHashs() || [];
 		const transactionsResponse = await Promise.all(
 			transactions.map(async (txHash: string) => {
-				const { transaction, transaction_outcome } = await checkTransaction(txHash);
+				const { transaction, transaction_outcome } = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getSwapActions()
+					.checkTransaction(txHash);
 				const actionsCount = transaction?.actions?.length || 0;
 				const offsetTransaction = actionsCount < 1 ? -1 : actionsCount > 1 ? 1 : 0;
 				const methodName =

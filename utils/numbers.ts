@@ -3,8 +3,8 @@
 /* eslint-disable no-plusplus */
 import BN from 'bn.js';
 import * as math from 'mathjs';
-import { TokenMetadata } from '@services/ft-contract';
-import { Pool } from '@services/pool';
+import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
+import { Pool } from '@ProviderPattern/models/Actions/AbstractMainPoolProviderAction';
 
 const BPS_CONVERSION = 10000;
 

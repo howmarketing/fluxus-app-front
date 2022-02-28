@@ -1,14 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Landing from '@components/Landing';
 import { useNearRPCContext } from '@hooks/index';
-import {
-	getTokenBalances,
-	getUserRegisteredTokens,
-	getWhitelistedTokens,
-	registerTokenAndExchange,
-} from '@services/token';
-import { ftGetTokenMetadata, ftRegisterExchange } from '@services/ft-contract';
-import { getRewardByTokenId } from '@services/farm';
+import ProviderPattern from '@ProviderPattern/index';
 import { H1, Card, CardRow, CardHeaderWrapper, BalancesTokenWrapper } from './styles';
 
 const DepositPage: React.FC = function () {
@@ -60,8 +53,16 @@ const BalancesToken: React.FC = function () {
 				];
 				// tudo aqui é teste e deve ser removido
 				const tokenID = leoTokens[3];
-				const tokenMetaData = await ftGetTokenMetadata(tokenID, true);
-				const rewardForToken = await getRewardByTokenId(tokenID, undefined, useFluxusFarmContract);
+				const tokenMetaData = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getFTContractActions()
+					.ftGetTokenMetadata(tokenID, true);
+				const rewardForToken = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getFarmActions()
+					.getRewardByTokenId(tokenID, undefined, useFluxusFarmContract);
 				const tokenData = {
 					...tokenMetaData,
 					total_user_reward_value: rewardForToken,
@@ -77,9 +78,21 @@ const BalancesToken: React.FC = function () {
 				// await ftRegisterExchange(tokenID);
 				// registerTokenAndExchange(tokenID);
 				// console.log(register);
-				const tokenBalances = await getTokenBalances(undefined, false);
-				const userRegisteredTokens = await getUserRegisteredTokens(undefined, undefined, true);
-				const whiteListTokens = await getWhitelistedTokens(undefined, false);
+				const tokenBalances = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getTokenActions()
+					.getTokenBalances(undefined, false);
+				const userRegisteredTokens = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getTokenActions()
+					.getUserRegisteredTokens(undefined, undefined, true);
+				const whiteListTokens = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getTokenActions()
+					.getWhitelistedTokens(undefined, false);
 				console.log({
 					tokenBalances,
 					userRegisteredTokens,

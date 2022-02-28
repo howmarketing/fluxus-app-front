@@ -10,7 +10,7 @@ export default function getConfig(env: string = 'testnet'): IMainProviderConfig 
 	}
 }
 /**
- * DEV ONLY: Anotations to easy consulting the old return to fast tests that are in progress while implementing the Provider Pattern interface
+ * DEV ONLY: Anotations to easy consulting the old return to fast tests, what still in progress, so keep while implementing the Provider Pattern interfaces
  * - OLD RETURN FROM GETCONFIG FUNCTION:
 * 	- {
 			networkId: 'testnet',

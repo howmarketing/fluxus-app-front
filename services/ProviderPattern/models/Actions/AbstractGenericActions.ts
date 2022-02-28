@@ -86,6 +86,10 @@ export default class AbstractGenericActions {
 		return this._providerActionsInstace.getProviderProtocolInstance().getWallet();
 	}
 
+	protected getProviderActions() {
+		return this._providerActionsInstace.getProviderProtocolInstance().getProviderActions();
+	}
+
 	/**
 	 * EXEC FUNCTIONS TYPE OF FUNCTION_CALL FROM VAULT SMART CONTRACT
 	 * @description If not specified the amount, that coul be a signed transaction, without need to user aprove the transaction

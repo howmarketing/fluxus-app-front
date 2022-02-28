@@ -3,12 +3,10 @@ import React, { useEffect, useState, ReactElement } from 'react';
 import Switch from 'react-switch';
 import { useNearRPCContext } from '@hooks/index';
 import { IFarmData as IVaultData, ISeedInfo, PoolDetails, PoolVolumes } from '@workers/workerNearPresets';
-import { ftGetTokenMetadata, TokenMetadata } from '@services/ft-contract';
-import { getSharesInPool } from '@services/pool';
-import { getRewardByTokenId, getStakedListByAccountId, getUnclaimedReward } from '@services/farm';
+import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import CardVault from '@components/CardVault/index';
 import { ICardVaultState } from '@components/CardVault';
-import { getPoolTvlFiatPrice, IPoolFiatPrice } from '@services/api';
+import { IPoolFiatPrice } from '@ProviderPattern/models/Actions/AbstractMainProviderAPI';
 import ProviderPattern from '@ProviderPattern/index';
 import { getWallet } from '@services/near';
 import { WrapBox, SwitchArea, SwitchAreaTitle, SwitchAreaTitleTag, ListVaultsBox } from './styles';
@@ -97,6 +95,13 @@ const VaultList: React.FC = function () {
 	const getVaultStakedList = async ({ useFluxusFarmContract = true }) =>
 		vaultActions.getVaultStakedList({ useFluxusFarmContract });
 
+	const getStakedListByAccountId = async ({ useFluxusFarmContract = true }) =>
+		ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFarmActions()
+			.getStakedListByAccountId({ useFluxusFarmContract });
+
 	const loadVaults = async () => {
 		setVaultBoxMinHeightWithCurrentHeight();
 		// get all user staked LP Tokens
@@ -135,17 +140,21 @@ const VaultList: React.FC = function () {
 					const farms = seed.farms.map(async (farmID: string, index: number) => {
 						let farm = {} as IVaultData;
 						farm = farmsObject[farmID];
-						farm.token_details = await ftGetTokenMetadata(farm.reward_token, false);
-						farm.user_reward = await getRewardByTokenId(
-							farm.reward_token,
-							undefined,
-							useFluxusVaultContractState,
-						);
-						farm.user_unclaimed_reward = await getUnclaimedReward(
-							farmID,
-							undefined,
-							useFluxusVaultContractState,
-						);
+						farm.token_details = await ProviderPattern.getInstance()
+							.getProvider()
+							.getProviderActions()
+							.getFTContractActions()
+							.ftGetTokenMetadata(farm.reward_token, false);
+						farm.user_reward = await ProviderPattern.getInstance()
+							.getProvider()
+							.getProviderActions()
+							.getFarmActions()
+							.getRewardByTokenId(farm.reward_token, undefined, useFluxusVaultContractState);
+						farm.user_unclaimed_reward = await ProviderPattern.getInstance()
+							.getProvider()
+							.getProviderActions()
+							.getFarmActions()
+							.getUnclaimedReward(farmID, undefined, useFluxusVaultContractState);
 						farmsObject[farmID] = farm;
 						return farm;
 					});
@@ -164,7 +173,11 @@ const VaultList: React.FC = function () {
 				populateSeed.pool_id = poolID;
 
 				// Set pool data from tvl price
-				const poolTvlFiatPrice = await getPoolTvlFiatPrice({ pool_id: poolID });
+				const poolTvlFiatPrice = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getAPIActions()
+					.getPoolTvlFiatPrice({ pool_id: poolID });
 				const populatedPool = { ...poolTvlFiatPrice } as IPoolFiatPrice &
 					IPopulatedPoolExtraDataToken &
 					IPopulatedPoolExtraDataVolume;
@@ -172,7 +185,11 @@ const VaultList: React.FC = function () {
 				// Get populated tokens
 				const getPopulatedTokens = () => {
 					const populatedTokens = populatedPool.token_account_ids.map(async (token_id: string) =>
-						ftGetTokenMetadata(token_id, false),
+						ProviderPattern.getInstance()
+							.getProvider()
+							.getProviderActions()
+							.getFTContractActions()
+							.ftGetTokenMetadata(token_id, false),
 					);
 					return populatedTokens;
 				};

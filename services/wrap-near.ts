@@ -1,7 +1,7 @@
 import { utils } from 'near-api-js';
+import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import getConfig from './config';
 import { withdrawAction } from './creators/token';
-import { ftGetStorageBalance, TokenMetadata } from './ft-contract';
 import {
 	executeMultipleTransactions,
 	ONE_YOCTO_NEAR,
@@ -10,11 +10,14 @@ import {
 	Transaction,
 	getWallet,
 } from './near';
-import { checkTokenNeedsStorageDeposit } from './token';
 import { storageDepositAction } from '../services/creators/storage';
+import ProviderPattern from './ProviderPattern';
 
 export const { WRAP_NEAR_CONTRACT_ID } = getConfig();
 export const NEW_ACCOUNT_STORAGE_COST = '0.00125';
+
+const getProvider = () => ProviderPattern.getInstance().getProvider();
+const getTokenActions = () => getProvider().getProviderActions().getTokenActions();
 
 export const wnearMetadata: TokenMetadata = {
 	id: 'wNEAR',
@@ -69,7 +72,7 @@ export const nearWithdraw = async (amount: string) => {
 
 export const wrapNear = async (amount: string) => {
 	const transactions: Transaction[] = [];
-	const neededStorage = await checkTokenNeedsStorageDeposit();
+	const neededStorage = await getTokenActions().checkTokenNeedsStorageDeposit();
 	if (neededStorage) {
 		transactions.push({
 			receiverId: REF_FI_CONTRACT_ID,
@@ -88,7 +91,11 @@ export const wrapNear = async (amount: string) => {
 	}
 
 	const actions: RefFiFunctionCallOptions[] = [];
-	const balance = await ftGetStorageBalance(WRAP_NEAR_CONTRACT_ID);
+	const balance = await ProviderPattern.getInstance()
+		.getProvider()
+		.getProviderActions()
+		.getFTContractActions()
+		.ftGetStorageBalance(WRAP_NEAR_CONTRACT_ID);
 
 	if (!balance || balance.total === '0') {
 		actions.push({
@@ -128,7 +135,11 @@ export const wrapNear = async (amount: string) => {
 export const unwrapNear = async (amount: string) => {
 	const transactions: Transaction[] = [];
 
-	const balance = await ftGetStorageBalance(WRAP_NEAR_CONTRACT_ID);
+	const balance = await ProviderPattern.getInstance()
+		.getProvider()
+		.getProviderActions()
+		.getFTContractActions()
+		.ftGetStorageBalance(WRAP_NEAR_CONTRACT_ID);
 
 	if (!balance || balance.total === '0') {
 		transactions.push({
@@ -165,7 +176,7 @@ export const unwrapNear = async (amount: string) => {
 		],
 	});
 
-	const needDeposit = await checkTokenNeedsStorageDeposit();
+	const needDeposit = await getTokenActions().checkTokenNeedsStorageDeposit();
 	if (needDeposit) {
 		transactions.unshift({
 			receiverId: REF_FI_CONTRACT_ID,

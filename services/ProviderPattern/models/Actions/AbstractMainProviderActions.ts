@@ -1,27 +1,36 @@
 import MainProviderActionsInterface from '@ProviderPattern/Interfaces/MainProviderActionsInterface';
-import AbstractMainProvider from '../AbstractMainProvider';
-import AbstractMainMTokenProviderAction from './AbstractMainMTokenProviderAction';
-import AbstractMainTokenProviderActions from './AbstractMainTokenProviderActions';
-import AbstractMainVaultProviderActions from './AbstractMainVaultProviderActions';
+import AbstractMainAccountProviderAction from '@ProviderPattern/models/Actions/AbstractMainAccountProviderAction';
+import AbstractMainProvider from '@ProviderPattern/models/AbstractMainProvider';
+import AbstractMainMTokenProviderAction from '@ProviderPattern/models/Actions/AbstractMainMTokenProviderAction';
+import AbstractMainTokenProviderActions from '@ProviderPattern/models/Actions/AbstractMainTokenProviderActions';
+import AbstractMainVaultProviderActions from '@ProviderPattern/models/Actions/AbstractMainVaultProviderActions';
+import AbstractMainFarmProviderAction from './AbstractMainFarmProviderAction';
+import AbstractMainFTContractProviderAction from './AbstractMainFTContractProviderAction';
+import AbstractMainPoolProviderAction from './AbstractMainPoolProviderAction';
+import AbstractMainSwapProviderAction from './AbstractMainSwapProviderAction';
+import AbstractMainProviderAPI from './AbstractMainProviderAPI';
+import AbstractMainIndexerProviderAction from './AbstractMainIndexerProviderAction';
 
 export default class AbstractMainProviderActions implements MainProviderActionsInterface {
 	private static _classInstanceSingleton: AbstractMainProviderActions;
 
 	private declare _ProviderProtocolInstance: AbstractMainProvider;
 
-	private declare _APIActionsInstance: object | undefined;
+	private declare _APIActionsInstance: AbstractMainProviderAPI;
 
-	private declare _AccountctionsInstance: object | undefined;
+	private declare _IndexerActionsInstance: AbstractMainIndexerProviderAction;
 
-	private declare _FTContractActionsInstance: object | undefined;
+	private declare _AccountActionsInstance: AbstractMainAccountProviderAction;
 
-	private declare _FarmActionsInstance: object | undefined;
+	private declare _FTContractActionsInstance: AbstractMainFTContractProviderAction;
+
+	private declare _FarmActionsInstance: AbstractMainFarmProviderAction;
 
 	private declare _MTokenActionsInstance: AbstractMainMTokenProviderAction;
 
-	private declare _PoolActionsInstance: object | undefined;
+	private declare _PoolActionsInstance: AbstractMainPoolProviderAction;
 
-	private declare _SwapActionsInstance: object | undefined;
+	private declare _SwapActionsInstance: AbstractMainSwapProviderAction;
 
 	private declare _TokenActionsInstance: AbstractMainTokenProviderActions;
 
@@ -40,13 +49,14 @@ export default class AbstractMainProviderActions implements MainProviderActionsI
 
 	private setUp(providerProtocolInstance: AbstractMainProvider) {
 		this._ProviderProtocolInstance = providerProtocolInstance;
-		this._APIActionsInstance = undefined;
-		this._AccountctionsInstance = undefined;
-		this._FTContractActionsInstance = undefined;
-		this._FarmActionsInstance = undefined;
+		this._APIActionsInstance = AbstractMainProviderAPI.getInstance(this);
+		this._IndexerActionsInstance = AbstractMainIndexerProviderAction.getInstance(this);
+		this._AccountActionsInstance = AbstractMainAccountProviderAction.getInstance(this);
+		this._FTContractActionsInstance = AbstractMainFTContractProviderAction.getInstance(this);
+		this._FarmActionsInstance = AbstractMainFarmProviderAction.getInstance(this);
 		this._MTokenActionsInstance = AbstractMainMTokenProviderAction.getInstance(this);
-		this._PoolActionsInstance = undefined;
-		this._SwapActionsInstance = undefined;
+		this._PoolActionsInstance = AbstractMainPoolProviderAction.getInstance(this);
+		this._SwapActionsInstance = AbstractMainSwapProviderAction.getInstance(this);
 		this._TokenActionsInstance = AbstractMainTokenProviderActions.getInstance(this);
 		this._VaultActionsInstance = AbstractMainVaultProviderActions.getInstance(this);
 		this._TransactionActionsInstance = undefined;
@@ -60,8 +70,12 @@ export default class AbstractMainProviderActions implements MainProviderActionsI
 		return this._APIActionsInstance;
 	}
 
+	public getIndexerActions() {
+		return this._IndexerActionsInstance;
+	}
+
 	public getAccountActions() {
-		return this._AccountctionsInstance;
+		return this._AccountActionsInstance;
 	}
 
 	public getFTContractActions() {

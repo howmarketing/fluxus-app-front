@@ -1,14 +1,11 @@
 /* eslint-disable no-async-promise-executor */
 /* eslint-disable camelcase */
 /* eslint-disable no-await-in-loop */
-import { keyStores, Near } from 'near-api-js';
 import getConfig from '@services/config';
 import { getNear, getWallet } from '@services/near';
-import { TokenMetadata } from '@services/ft-contract';
-import { getTokenBalances } from '@services/token';
+import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { BlockReference, CallFunctionRequest } from 'near-api-js/lib/providers/provider';
-import { stake, withdrawAllReward } from '@services/m-token';
-import { claimRewardBySeed } from '@services/farm';
+import ProviderPattern from '@ProviderPattern/index';
 
 export const config = getConfig('testnet');
 
@@ -202,7 +199,8 @@ export const getListFarmsBySeed = async (seedID: string): Promise<IFarmData> =>
 		args: { seed_id: seedID },
 	});
 
-export const getUserDeposits = async (accountID = getWallet().getAccountId()): Promise<any> => getTokenBalances();
+export const getUserDeposits = async (accountID = getWallet().getAccountId()): Promise<any> =>
+	ProviderPattern.getInstance().getProvider().getProviderActions().getTokenActions().getTokenBalances();
 
 export type IUserListRewards = Record<string, string>;
 export const getUserListRewards = async (
@@ -220,7 +218,7 @@ export const getUserListRewards = async (
 	});
 };
 export const stakeFarmLPTokens = async ({ token_id = '', amount = '', msg = '', useFluxusFarmContract = false }) =>
-	stake({
+	ProviderPattern.getInstance().getProvider().getProviderActions().getMTokenActions().stake({
 		token_id,
 		amount,
 		msg,
@@ -242,7 +240,12 @@ export const withdrawUserRewards = async (
 	checkedList: Record<string, any>,
 	unregister?: boolean,
 	useFluxusFarmContract?: boolean,
-): Promise<void> => withdrawAllReward(checkedList, unregister, useFluxusFarmContract);
+): Promise<void> =>
+	ProviderPattern.getInstance()
+		.getProvider()
+		.getProviderActions()
+		.getMTokenActions()
+		.withdrawAllReward(checkedList, unregister, useFluxusFarmContract);
 
 export const getListUserSeeds = async ({
 	accountID = getWallet().isSignedIn() ? getWallet().getAccountId() : config.REF_FARM_CONTRACT_ID,
@@ -255,9 +258,14 @@ export const getListUserSeeds = async ({
 	});
 
 export const claimUserRewardsBySeed = async (seed_id: string, useFluxusFarmContract = false): Promise<any> => {
-	const claimed = await claimRewardBySeed(seed_id, useFluxusFarmContract).catch((err: any) => {
-		console.log('claimAllFarmedRewardTokens:(error) ', err?.message || 'unknown error');
-		// alert('Claim Rewards by seed Failed');
-	});
+	const claimed = await ProviderPattern.getInstance()
+		.getProvider()
+		.getProviderActions()
+		.getFarmActions()
+		.claimRewardBySeed(seed_id, useFluxusFarmContract)
+		.catch((err: any) => {
+			console.log('claimAllFarmedRewardTokens:(error) ', err?.message || 'unknown error');
+			// alert('Claim Rewards by seed Failed');
+		});
 	return claimed;
 };

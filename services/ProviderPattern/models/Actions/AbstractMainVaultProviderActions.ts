@@ -2,7 +2,6 @@ import BN from 'bn.js';
 import { functionCall } from 'near-api-js/lib/transaction';
 import { toNonDivisibleNumber } from '@utils/numbers';
 import ProviderPattern from '@ProviderPattern/index';
-import { getStakedListByAccountId } from '@services/farm';
 import AbstractMainProviderActions from '@ProviderPattern/models/Actions/AbstractMainProviderActions';
 import AbstractGenericActions, {
 	IFunctionCall,
@@ -50,15 +49,15 @@ export default class AbstractMainVaultProviderActions extends AbstractGenericAct
 	}
 
 	/**
-	 * GET THE LIST OF ALL STAKES THE VAULT HAVE SHARES
+	 * GET THE LIST ABOUT ALL VAULT LP IN  SHARES
 	 */
 	public async getVaultStakedList({ useFluxusFarmContract = true }) {
 		const accountId = this.getVaultContractId();
-		const parms = {
+		const params = {
 			accountId,
 			useFluxusFarmContract,
 		};
-		return getStakedListByAccountId(parms);
+		return this.getProviderActions().getFarmActions().getStakedListByAccountId(params);
 	}
 
 	/**

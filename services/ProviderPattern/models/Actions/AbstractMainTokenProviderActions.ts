@@ -9,8 +9,8 @@ import {
 	REF_FI_CONTRACT_ID,
 	executeMultipleTransactions,
 } from '@services/near';
-import { ftGetStorageBalance, TokenMetadata } from '@services/ft-contract';
-import { ACCOUNT_MIN_STORAGE_AMOUNT, currentStorageBalance } from '@services/account';
+import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
+import { ACCOUNT_MIN_STORAGE_AMOUNT } from '@ProviderPattern/models/Actions/AbstractMainAccountProviderAction';
 import { toNonDivisibleNumber } from '@utils/numbers';
 import {
 	MIN_DEPOSIT_PER_TOKEN,
@@ -23,6 +23,7 @@ import {
 } from '@services/creators/storage';
 import { unwrapNear, WRAP_NEAR_CONTRACT_ID } from '@services/wrap-near';
 import { registerTokenAction } from '@services/creators/token';
+import ProviderPattern from '@ProviderPattern/index';
 import AbstractMainProviderActions from './AbstractMainProviderActions';
 import AbstractGenericActions from './AbstractGenericActions';
 
@@ -69,7 +70,11 @@ export default class AbstractMainTokenProviderActions extends AbstractGenericAct
 		if (needDeposit) {
 			storageNeeded = Number(ONE_MORE_DEPOSIT_AMOUNT);
 		} else {
-			const balance = await Promise.resolve(currentStorageBalance(this.getWallet().getAccountId()));
+			const balance = await Promise.resolve(
+				this.getProviderActionsInstace()
+					.getAccountActions()
+					.currentStorageBalance(this.getWallet().getAccountId()),
+			);
 
 			if (!balance) {
 				storageNeeded = math.add(storageNeeded, Number(ACCOUNT_MIN_STORAGE_AMOUNT));
@@ -104,7 +109,11 @@ export default class AbstractMainTokenProviderActions extends AbstractGenericAct
 			functionCalls: actions,
 		});
 
-		const exchangeBalanceAtFt = await ftGetStorageBalance(tokenId, REF_FI_CONTRACT_ID);
+		const exchangeBalanceAtFt = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFTContractActions()
+			.ftGetStorageBalance(tokenId, REF_FI_CONTRACT_ID);
 		if (!exchangeBalanceAtFt || exchangeBalanceAtFt.total === '0') {
 			transactions.push({
 				receiverId: tokenId,
@@ -116,9 +125,14 @@ export default class AbstractMainTokenProviderActions extends AbstractGenericAct
 	}
 
 	public async registerToken(tokenId: string) {
-		const registered = await ftGetStorageBalance(tokenId, REF_FI_CONTRACT_ID).catch(() => {
-			throw new Error(`${tokenId} doesn't exist.`);
-		});
+		const registered = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFTContractActions()
+			.ftGetStorageBalance(tokenId, REF_FI_CONTRACT_ID)
+			.catch(() => {
+				throw new Error(`${tokenId} doesn't exist.`);
+			});
 		if (!registered) throw new Error('No liquidity pools available for token');
 
 		const actions: RefFiFunctionCallOptions[] = [registerTokenAction(tokenId)];
@@ -186,7 +200,11 @@ export default class AbstractMainTokenProviderActions extends AbstractGenericAct
 
 		const transactions: Transaction[] = [];
 		const parsedAmount = toNonDivisibleNumber(token.decimals, amount);
-		const ftBalance = await ftGetStorageBalance(token.id);
+		const ftBalance = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFTContractActions()
+			.ftGetStorageBalance(token.id);
 
 		transactions.unshift({
 			receiverId: REF_FI_CONTRACT_ID,
@@ -241,6 +259,24 @@ export default class AbstractMainTokenProviderActions extends AbstractGenericAct
 			methodName: 'get_deposit',
 			args: { account_id: wallet.getAccountId(), token_id: tokenId },
 		});
+	}
+
+	public async getUserTokenBalances({
+		account_id = this.getWallet().getAccountId(),
+		contract_id = '',
+		debug = false,
+	}): Promise<TokenBalancesView> {
+		this.devImplementation = true;
+		const args = { account_id };
+		const methodName = 'get_deposits';
+		const tokenBalancesViewResponse = await refFiViewFunction({
+			methodName,
+			args,
+			fluxusContractName: contract_id,
+			debug,
+		});
+
+		return { ...tokenBalancesViewResponse } as TokenBalancesView;
 	}
 
 	public getUserRegisteredTokens(

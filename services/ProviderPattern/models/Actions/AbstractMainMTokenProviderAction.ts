@@ -4,8 +4,8 @@ import { utils } from 'near-api-js';
 import { toNonDivisibleNumber } from '@utils/numbers';
 import { WRAP_NEAR_CONTRACT_ID } from '@services/wrap-near';
 import { ONE_YOCTO_NEAR, Transaction, executeFarmMultipleTransactions } from '@services/near';
-import { ftGetStorageBalance, TokenMetadata } from '@services/ft-contract';
-import { ACCOUNT_MIN_STORAGE_AMOUNT, currentStorageBalanceOfFarm } from '@services/account';
+import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
+import { ACCOUNT_MIN_STORAGE_AMOUNT } from '@ProviderPattern/models/Actions/AbstractMainAccountProviderAction';
 import {
 	MIN_DEPOSIT_PER_TOKEN,
 	storageDepositAction,
@@ -13,8 +13,9 @@ import {
 	STORAGE_TO_REGISTER_WITH_MFT,
 	MIN_DEPOSIT_PER_TOKEN_FARM,
 } from '@services/creators/storage';
-import AbstractMainProviderActions from './AbstractMainProviderActions';
-import AbstractGenericActions from './AbstractGenericActions';
+import ProviderPattern from '@ProviderPattern/index';
+import AbstractGenericActions from '@ProviderPattern/models/Actions/AbstractGenericActions';
+import AbstractMainProviderActions from '@ProviderPattern/models/Actions/AbstractMainProviderActions';
 
 export const LP_TOKEN_DECIMALS = 24;
 export const FARM_STORAGE_BALANCE = '0.045';
@@ -56,7 +57,11 @@ export default class AbstractMainMTokenProviderAction extends AbstractGenericAct
 
 	async checkTokenNeedsStorageDeposit(page?: string, useFluxusFarmContract = false) {
 		let storageNeeded: math.MathType = 0;
-		const balance = await currentStorageBalanceOfFarm(this.getWallet().getAccountId(), useFluxusFarmContract);
+		const balance = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getAccountActions()
+			.currentStorageBalanceOfFarm(this.getWallet().getAccountId(), useFluxusFarmContract);
 
 		if (!balance) {
 			storageNeeded = math.add(storageNeeded, Number(ACCOUNT_MIN_STORAGE_AMOUNT));
@@ -73,10 +78,6 @@ export default class AbstractMainMTokenProviderAction extends AbstractGenericAct
 
 	/**
 	 * Do stake operation for users through the exchange smart contract to the farm smart contract
-	 * @description
-	 *
-	 * @param {StakeOptions} props
-	 * @returns {Promise<void>}
 	 */
 	async stake({ token_id, amount, msg = '', useFluxusFarmContract = false }: StakeOptions) {
 		amount = toNonDivisibleNumber(LP_TOKEN_DECIMALS, amount);
@@ -153,21 +154,26 @@ export default class AbstractMainMTokenProviderAction extends AbstractGenericAct
 		return executeFarmMultipleTransactions(transactions);
 	}
 
-	async withdrawRewa({
+	async withdrawReward({
 		token_id,
 		amount,
 		token,
 		unregister = false,
 		useFluxusFarmContract = false,
 	}: WithdrawOptions) {
-		const receiverContractId = (
+		const receiverContractId = `${
 			useFluxusFarmContract
 				? this.getProviderConfigData().FLUXUS_FARM_CONTRACT_ID
 				: this.getProviderConfigData().REF_FARM_CONTRACT_ID
-		) as string;
+		}`;
+
 		const transactions: Transaction[] = [];
 		const parsedAmount = toNonDivisibleNumber(token.decimals, amount);
-		const ftBalance = await ftGetStorageBalance(token_id);
+		const ftBalance = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFTContractActions()
+			.ftGetStorageBalance(token_id);
 
 		if (!ftBalance || ftBalance.total === '0') {
 			transactions.unshift({
@@ -209,14 +215,18 @@ export default class AbstractMainMTokenProviderAction extends AbstractGenericAct
 		return executeFarmMultipleTransactions(transactions);
 	}
 
-	async withdrawAllRew(checkedList: Record<string, any>, unregister = false, useFluxusFarmContract = false) {
+	async withdrawAllReward(checkedList: Record<string, any>, unregister = false, useFluxusFarmContract = false) {
 		const transactions: Transaction[] = [];
 		const token_id_list = Object.keys(checkedList);
 		const ftBalancePromiseList: any[] = [];
 		const functionCalls: any[] = [];
 
 		token_id_list.forEach(token_id => {
-			const ftBalance = ftGetStorageBalance(token_id);
+			const ftBalance = ProviderPattern.getInstance()
+				.getProvider()
+				.getProviderActions()
+				.getFTContractActions()
+				.ftGetStorageBalance(token_id);
 			ftBalancePromiseList.push(ftBalance);
 			functionCalls.push({
 				methodName: 'withdraw_reward',

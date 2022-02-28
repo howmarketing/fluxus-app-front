@@ -1,39 +1,24 @@
 /* eslint-disable no-alert */
 import React, { useEffect, useState } from 'react';
 import type { NextPage } from 'next';
-import { ContactMail, MonetizationOn as Money } from '@material-ui/icons';
 import Head from 'next/head';
 import { useNearData } from '@hooks/useNearData';
 import Landing from '@components/Landing';
 import { H1 } from '@components/HomePage/styles';
 import ToastNotify, { dispatchToastNotify } from '@components/ToastNotify';
-import useDarkMode from '@hooks/useDarkMode';
-import { ftGetTokenMetadata } from '@services/ft-contract';
-import { getAmount, getWallet } from '@services/near';
+import { getWallet } from '@services/near';
 import { ICallbackData, nearWalletAsWindow } from '@utils/nearWalletAsWindow';
 import ProviderPattern from '@services/ProviderPattern';
 import ButtonGhost from '@components/ButtonGhost';
-import { BN } from 'bn.js';
-import { toNonDivisibleNumber } from '@utils/numbers';
-import { AccountView, QueryResponseKind } from 'near-api-js/lib/providers/provider';
-import { serialize } from 'near-api-js/lib/utils/index';
-import { AccountBalance } from 'near-api-js/lib/account';
-import { getRewardByTokenId, getStakedListByAccountId, getUnclaimedReward } from '@services/farm';
 import { useNearRPCContext } from '@hooks/index';
-import {
-	IPopulatedPool,
-	IPopulatedPoolExtraDataToken,
-	IPopulatedPoolExtraDataVolume,
-	IPopulatedSeed,
-} from '@components/VaultList';
-import { getUserDeposits, IFarmData as IVaultData, ISeedInfo, PoolDetails } from '@workers/workerNearPresets';
-import { getSharesInPool } from '@services/pool';
-import { getUserTokenBalances } from '@services/token';
-import AbstractMainProviderAPI from '@ProviderPattern/models/Actions/AbstractMainProviderAPI';
-import { getPoolBalance, getPoolTvlFiatPrice, getPoolTvlFiatPriceHistory, IPoolFiatPrice } from '@services/api';
+import { IPopulatedPoolExtraDataToken, IPopulatedPoolExtraDataVolume, IPopulatedSeed } from '@components/VaultList';
+import { IFarmData as IVaultData } from '@workers/workerNearPresets';
+import AbstractMainProviderAPI, { IPoolFiatPrice } from '@ProviderPattern/models/Actions/AbstractMainProviderAPI';
 import AbstractMainVaultProviderActions from '@ProviderPattern/models/Actions/AbstractMainVaultProviderActions';
 import AbstractMainProvider from '@ProviderPattern/models/AbstractMainProvider';
 import MainProvider from '@ProviderPattern/models/MainProvider';
+import { BN } from 'bn.js';
+import { toNonDivisibleNumber } from '@utils/numbers';
 import { homePageMetaDescribes } from '../consts';
 
 /**
@@ -49,7 +34,6 @@ import { homePageMetaDescribes } from '../consts';
 const Laboratorio: NextPage = function () {
 	const { nearPriceState } = useNearData();
 	const nearRPCContext = useNearRPCContext();
-	const { theme } = useDarkMode();
 
 	// Console log provider pattern instance
 	const getProviderPattern = async (DOMProviderPatternName: any = 'ProviderPattern'): Promise<any> => {
@@ -65,7 +49,8 @@ const Laboratorio: NextPage = function () {
 
 	// Console log API instance
 	const getApiInstance = async (DOMAsignInstanceName: any = 'ApiInstance'): Promise<any> => {
-		const sendToWindowFunction = async (...arg: any[]) => AbstractMainProviderAPI.getInstance();
+		const sendToWindowFunction = async (...arg: any[]) =>
+			ProviderPattern.getInstance().getProvider().getProviderActions().getAPIActions();
 		defineDOMFunction({
 			DOMPrefixFunctionName: 'get',
 			DOMFunctionName: DOMAsignInstanceName,
@@ -259,10 +244,14 @@ const Laboratorio: NextPage = function () {
 			ProviderPattern.getProviderInstance().getConnectionConfigData().FLUXUS_VAULT_CONTRACT_ID || '';
 		const accountId = typeof account_id !== 'string' || account_id.length < 2 ? vaultContractID : account_id;
 		useFluxusFarmContract = typeof useFluxusFarmContract === 'undefined' ? false : useFluxusFarmContract;
-		const stakedList = await getStakedListByAccountId({
-			accountId,
-			useFluxusFarmContract,
-		});
+		const stakedList = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFarmActions()
+			.getStakedListByAccountId({
+				accountId,
+				useFluxusFarmContract,
+			});
 		console.log('getStakedListByAccountIdFromContract', stakedList);
 		return stakedList;
 	};
@@ -321,7 +310,11 @@ const Laboratorio: NextPage = function () {
 	const loadVaults = async ({ useFluxusVaultContractState = false }) => {
 		const nearPresets = nearRPCContext.getNearPresets();
 		// get all user staked LP Tokens
-		const userStakedList = await getStakedListByAccountId({ useFluxusFarmContract: useFluxusVaultContractState });
+		const userStakedList = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFarmActions()
+			.getStakedListByAccountId({ useFluxusFarmContract: useFluxusVaultContractState });
 		// Object with key as farm_id and value as farm data
 		const farmsObject: Record<any, any> = {};
 		// Array of all object farmData
@@ -347,17 +340,21 @@ const Laboratorio: NextPage = function () {
 					seed.farms.map(async (farmID: string, index: number) => {
 						let farm = {} as IVaultData;
 						farm = farmsObject[farmID];
-						farm.token_details = await ftGetTokenMetadata(farm.reward_token, false);
-						farm.user_reward = await getRewardByTokenId(
-							farm.reward_token,
-							undefined,
-							useFluxusVaultContractState,
-						);
-						farm.user_unclaimed_reward = await getUnclaimedReward(
-							farmID,
-							undefined,
-							useFluxusVaultContractState,
-						);
+						farm.token_details = await ProviderPattern.getInstance()
+							.getProvider()
+							.getProviderActions()
+							.getFTContractActions()
+							.ftGetTokenMetadata(farm.reward_token, false);
+						farm.user_reward = await ProviderPattern.getInstance()
+							.getProvider()
+							.getProviderActions()
+							.getFarmActions()
+							.getRewardByTokenId(farm.reward_token, undefined, useFluxusVaultContractState);
+						farm.user_unclaimed_reward = await ProviderPattern.getInstance()
+							.getProvider()
+							.getProviderActions()
+							.getFarmActions()
+							.getUnclaimedReward(farmID, undefined, useFluxusVaultContractState);
 						farmsObject[farmID] = farm;
 						return farm;
 					}),
@@ -369,16 +366,28 @@ const Laboratorio: NextPage = function () {
 				})(populateSeed.seed_id);
 				// set the pool ID "12" at the populated seed object
 				populateSeed.pool_id = poolID;
-				const poolTvlFiatPrice = await getPoolTvlFiatPrice({ pool_id: poolID });
+				const poolTvlFiatPrice = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getAPIActions()
+					.getPoolTvlFiatPrice({ pool_id: poolID });
 				const populatedPool = { ...poolTvlFiatPrice } as IPoolFiatPrice &
 					IPopulatedPoolExtraDataToken &
 					IPopulatedPoolExtraDataVolume;
 				populatedPool.populated_tokens = await Promise.all(
 					populatedPool.token_account_ids.map(async (token_id: string) =>
-						ftGetTokenMetadata(token_id, false),
+						ProviderPattern.getInstance()
+							.getProvider()
+							.getProviderActions()
+							.getFTContractActions()
+							.ftGetTokenMetadata(token_id, false),
 					),
 				);
-				populatedPool.shares_lptoken = await getSharesInPool({ pool_id: poolID });
+				populatedPool.shares_lptoken = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getPoolActions()
+					.getSharesInPool({ pool_id: poolID });
 				populateSeed.pool = populatedPool;
 				populateSeed.shares_percent = parseFloat(
 					`${Number(`${populateSeed.amount}`) / Number(`${populatedPool.shares_total_supply}`)}`,
@@ -386,8 +395,16 @@ const Laboratorio: NextPage = function () {
 				populateSeed.shares_tvl = parseFloat(
 					`${Number(`${populateSeed.shares_percent}`) * Number(`${populateSeed.pool.tvl}`)}`,
 				).toFixed(24);
-				populateSeed.token_from = await ftGetTokenMetadata(populateSeed.pool.token_account_ids[0]);
-				populateSeed.token_to = await ftGetTokenMetadata(populateSeed.pool.token_account_ids[1]);
+				populateSeed.token_from = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getFTContractActions()
+					.ftGetTokenMetadata(populateSeed.pool.token_account_ids[0]);
+				populateSeed.token_to = await ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getFTContractActions()
+					.ftGetTokenMetadata(populateSeed.pool.token_account_ids[1]);
 				populateSeed.user_shares =
 					typeof userStakedList[populateSeed.seed_id] !== 'undefined'
 						? userStakedList[populateSeed.seed_id]
@@ -418,7 +435,11 @@ const Laboratorio: NextPage = function () {
 			debug,
 		};
 		console.log('getRefFarmUsersDeposits: ', args);
-		return getUserTokenBalances(args);
+		return ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getTokenActions()
+			.getUserTokenBalances(args);
 	};
 
 	// TestAction Props
@@ -766,7 +787,8 @@ console.log("${displayFunctionAccessName}_response: ", ${displayFunctionAccessNa
 			label: 'Get shares in pool',
 			args: { pool_id: 193, account_id: getProvider().getProviderConfigData().FLUXUS_VAULT_CONTRACT_ID },
 			functionName: 'getSharesInPool',
-			functionToBeExecuted: getSharesInPool,
+			functionToBeExecuted: ProviderPattern.getInstance().getProvider().getProviderActions().getPoolActions()
+				.getSharesInPool,
 		});
 
 		// getPoolTvlFiatPriceHistory
@@ -776,7 +798,8 @@ console.log("${displayFunctionAccessName}_response: ", ${displayFunctionAccessNa
 			label: 'Get pool TVL Fiat Price History',
 			args: { pool_id: 107 },
 			functionName: 'getPoolTvlFiatPriceHistory',
-			functionToBeExecuted: getPoolTvlFiatPriceHistory,
+			functionToBeExecuted: ProviderPattern.getInstance().getProvider().getProviderActions().getAPIActions()
+				.getPoolTvlFiatPriceHistory,
 		});
 		// getPoolTvlFiatPrice
 		pushAction({
@@ -785,12 +808,27 @@ console.log("${displayFunctionAccessName}_response: ", ${displayFunctionAccessNa
 			label: 'Get pool TVL Fiat Price',
 			args: { pool_id: 107 },
 			functionName: 'getPoolTvlFiatPrice',
-			functionToBeExecuted: getPoolTvlFiatPrice,
+			functionToBeExecuted: ProviderPattern.getInstance().getProvider().getProviderActions().getAPIActions()
+				.getPoolTvlFiatPrice,
+		});
+
+		// sned money
+		pushAction({
+			id: 'sendMoney',
+			methodName: '',
+			label: 'Send Money',
+			args: { receiverId: 'ariza.testnet', amount: 198 },
+			functionName: 'sendMoney',
+			functionToBeExecuted: sendMoney,
 		});
 
 		setActionsState(actions);
 	};
 
+	const sendMoney = ({ receiverId = 'ariza.testnet', amount = 198 }) =>
+		getWallet()
+			.account()
+			.sendMoney(receiverId, new BN(toNonDivisibleNumber(24, `${amount}`)));
 	const getUserBalance = () => getWallet().account().getBalance();
 	const repeatMatrix = (qt = 20) =>
 		Object.assign(new Array(qt).fill(1), []).map((itemA, index) => Number(itemA) + Number(index));

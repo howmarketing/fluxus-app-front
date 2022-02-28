@@ -1,7 +1,7 @@
 /* eslint-disable no-return-await */
-import { ftGetTokenMetadata, TokenMetadata } from '@services/ft-contract';
+import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { toReadableNumber } from '@utils/numbers';
-import { getPoolDetails } from '@services/pool';
+import ProviderPattern from '@ProviderPattern/index';
 
 export const parseAction = async (methodName: string, params: any, tokenId?: string) => {
 	switch (methodName) {
@@ -57,8 +57,16 @@ export const parseAction = async (methodName: string, params: any, tokenId?: str
 };
 
 const parseSwap = async (params: any) => {
-	const in_token = await ftGetTokenMetadata(params.actions[0].token_in);
-	const out_token = await ftGetTokenMetadata(params.actions[0].token_out);
+	const in_token = await ProviderPattern.getInstance()
+		.getProvider()
+		.getProviderActions()
+		.getFTContractActions()
+		.ftGetTokenMetadata(params.actions[0].token_in);
+	const out_token = await ProviderPattern.getInstance()
+		.getProvider()
+		.getProviderActions()
+		.getFTContractActions()
+		.ftGetTokenMetadata(params.actions[0].token_out);
 
 	return {
 		Action: 'Swap',
@@ -71,7 +79,11 @@ const parseSwap = async (params: any) => {
 };
 
 const parseWithdraw = async (params: any) => {
-	const token = await ftGetTokenMetadata(params.token_id);
+	const token = await ProviderPattern.getInstance()
+		.getProvider()
+		.getProviderActions()
+		.getFTContractActions()
+		.ftGetTokenMetadata(params.token_id);
 
 	return {
 		Action: 'Withdraw',
@@ -87,8 +99,20 @@ const parseRegisterTokens = (params: any) => ({
 });
 
 const parseAddLiquidity = async (params: any) => {
-	const pool = await getPoolDetails(params.pool_id);
-	const tokens = await Promise.all<TokenMetadata>(pool.tokenIds.map(id => ftGetTokenMetadata(id)));
+	const pool = await ProviderPattern.getInstance()
+		.getProvider()
+		.getProviderActions()
+		.getPoolActions()
+		.getPoolDetails(params.pool_id);
+	const tokens = await Promise.all<TokenMetadata>(
+		pool.tokenIds.map(id =>
+			ProviderPattern.getInstance()
+				.getProvider()
+				.getProviderActions()
+				.getFTContractActions()
+				.ftGetTokenMetadata(id),
+		),
+	);
 
 	return {
 		Action: 'Add Liquidity',
@@ -99,8 +123,20 @@ const parseAddLiquidity = async (params: any) => {
 };
 
 const parseRemoveLiquidity = async (params: any) => {
-	const pool = await getPoolDetails(params.pool_id);
-	const tokens = await Promise.all<TokenMetadata>(pool.tokenIds.map(id => ftGetTokenMetadata(id)));
+	const pool = await ProviderPattern.getInstance()
+		.getProvider()
+		.getProviderActions()
+		.getPoolActions()
+		.getPoolDetails(params.pool_id);
+	const tokens = await Promise.all<TokenMetadata>(
+		pool.tokenIds.map(id =>
+			ProviderPattern.getInstance()
+				.getProvider()
+				.getProviderActions()
+				.getFTContractActions()
+				.ftGetTokenMetadata(id),
+		),
+	);
 
 	return {
 		Action: 'Remove Liquidity',
@@ -159,7 +195,11 @@ const parseClaimRewardBySeed = async (params: any) => {
 
 const parseWithdrawReward = async (params: any) => {
 	const { token_id, amount, unregister } = params;
-	const token = await ftGetTokenMetadata(token_id);
+	const token = await ProviderPattern.getInstance()
+		.getProvider()
+		.getProviderActions()
+		.getFTContractActions()
+		.ftGetTokenMetadata(token_id);
 	return {
 		Action: 'Withdraw reward',
 		Amount: toReadableNumber(token.decimals, amount),
@@ -180,11 +220,19 @@ const parseFtTransferCall = async (params: any, tokenId: string) => {
 		Action = 'Instant swap';
 		const actions = JSON.parse(msg).actions[0];
 		const { token_in } = actions;
-		const token = await ftGetTokenMetadata(token_in);
+		const token = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFTContractActions()
+			.ftGetTokenMetadata(token_in);
 		Amount = toReadableNumber(token.decimals, amount);
 	} else {
 		Action = 'Deposit';
-		const token = await ftGetTokenMetadata(tokenId);
+		const token = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFTContractActions()
+			.ftGetTokenMetadata(tokenId);
 		Amount = toReadableNumber(token.decimals, amount);
 	}
 	return {

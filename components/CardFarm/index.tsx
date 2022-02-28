@@ -15,16 +15,15 @@ import CardRewards, { IPopulatedReward } from '@components/CardRewards';
 import { useDarkMode, useNearRPCContext } from '@hooks/index';
 import { IPopulatedSeed } from '@components/FarmList';
 import { IFarmData } from '@workers/workerNearPresets';
-import { TokenMetadata } from '@services/ft-contract';
+import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import ButtonPrimary from '@components/ButtonPrimary';
 import ButtonGhost from '@components/ButtonGhost';
 import { getMftTokenId } from '@utils/token';
-import { stake, unstake } from '@services/m-token';
-import { claimRewardBySeed, getRewardByTokenId, getUnclaimedReward } from '@services/farm';
 import { toNonDivisibleNumber, toReadableNumber } from '@utils/numbers';
 import { IDarkModeContext } from '@contexts/darkMode';
 import { nearWalletAsWindow } from '@utils/nearWalletAsWindow';
 import { INearRPCContext } from '@contexts/nearData/nearRPCData';
+import ProviderPattern from '@ProviderPattern/index';
 import {
 	CardFarmAreaStyled,
 	CardContainerStyled,
@@ -658,16 +657,16 @@ export const DisplayerCardBodyRewards = (props: {
 	};
 
 	const updateFarmDataRewardValue = async (farmData: IFarmData) => {
-		farmData.user_reward = await getRewardByTokenId(
-			farmData.token_details.id,
-			undefined,
-			useFluxusFarmContractState,
-		);
-		farmData.user_unclaimed_reward = await getUnclaimedReward(
-			farmData.farm_id,
-			undefined,
-			useFluxusFarmContractState,
-		);
+		farmData.user_reward = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFarmActions()
+			.getRewardByTokenId(farmData.token_details.id, undefined, useFluxusFarmContractState);
+		farmData.user_unclaimed_reward = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFarmActions()
+			.getUnclaimedReward(farmData.farm_id, undefined, useFluxusFarmContractState);
 		return farmData;
 	};
 
@@ -940,10 +939,15 @@ const ModalUnstakeFooter = (props: {
 			amount,
 			useFluxusFarmContract,
 		};
-		await unstake(unstakeValues).catch((error: any) => {
-			// Error log
-			console.log('Stake error: ', error);
-		});
+		await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getMTokenActions()
+			.unstake(unstakeValues)
+			.catch((error: any) => {
+				// Error log
+				console.log('Stake error: ', error);
+			});
 		return unstakeValues;
 	};
 	return (

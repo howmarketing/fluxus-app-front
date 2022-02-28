@@ -7,9 +7,9 @@ import React, { HTMLAttributes, ReactChildren, ReactElement, useEffect, useState
 import ButtonPrimary from '@components/ButtonPrimary';
 import FluxusIcon from '@assets/app/fluxus-icon.svg';
 import { useNearRPCContext } from '@hooks/index';
-import { TokenMetadata } from '@services/ft-contract';
+import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { IPopulatedSeed } from '@components/FarmList';
-import { claimRewardBySeed, getUnclaimedReward } from '@services/farm';
+import ProviderPattern from '@ProviderPattern/index';
 import {
 	CardRewardsStyled,
 	CardRewardsContainerStyled,
@@ -148,10 +148,15 @@ export const CardRewards: React.FC<CardRewardsProps> = function ({ ...props }) {
 									} else {
 										(async () => {
 											if (props?.seedData?.seed_id) {
-												await claimRewardBySeed(props.seedData.seed_id).catch((err: any) => {
-													// Error log
-													console.log(err);
-												});
+												await ProviderPattern.getInstance()
+													.getProvider()
+													.getProviderActions()
+													.getFarmActions()
+													.claimRewardBySeed(props.seedData.seed_id)
+													.catch((err: any) => {
+														// Error log
+														console.log(err);
+													});
 											} else {
 												alert('Could not claim rewards by seed becouse these wasnt provided');
 											}

@@ -16,11 +16,8 @@ import { IDarkModeContext } from '@contexts/darkMode';
 import { useDarkMode, useNearRPCContext } from '@hooks/index';
 import { toNonDivisibleNumber, toReadableNumber } from '@utils/numbers';
 import { ICallbackData, IWalletAsWindow, nearWalletAsWindow } from '@utils/nearWalletAsWindow';
-import { getMftTokenId } from '@utils/token';
 import { IFarmData as IVaultData } from '@workers/workerNearPresets';
-import { unstake } from '@services/m-token';
-import { getRewardByTokenId, getUnclaimedReward } from '@services/farm';
-import { TokenMetadata } from '@services/ft-contract';
+import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { IPopulatedReward } from '@components/CardRewards';
 import { IPopulatedSeed } from '@components/VaultList';
 import ButtonPrimary from '@components/ButtonPrimary';
@@ -920,16 +917,16 @@ export const DisplayerCardBodyRewards = (props: {
 	};
 
 	const updateVaultDataRewardValue = async (farmData: IVaultData) => {
-		farmData.user_reward = await getRewardByTokenId(
-			farmData.token_details.id,
-			undefined,
-			useFluxusVaultContractState,
-		);
-		farmData.user_unclaimed_reward = await getUnclaimedReward(
-			farmData.farm_id,
-			undefined,
-			useFluxusVaultContractState,
-		);
+		farmData.user_reward = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFarmActions()
+			.getRewardByTokenId(farmData.token_details.id, undefined, useFluxusVaultContractState);
+		farmData.user_unclaimed_reward = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFarmActions()
+			.getUnclaimedReward(farmData.farm_id, undefined, useFluxusVaultContractState);
 		return farmData;
 	};
 
@@ -1312,10 +1309,15 @@ const ModalUnstakeFooter = (props: {
 			amount,
 			useFluxusVaultContract,
 		};
-		await unstake(unstakeValues).catch((error: any) => {
-			// Error log
-			console.log('Stake error: ', error);
-		});
+		await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getMTokenActions()
+			.unstake(unstakeValues)
+			.catch((error: any) => {
+				// Error log
+				console.log('Stake error: ', error);
+			});
 		return unstakeValues;
 	};
 	return (

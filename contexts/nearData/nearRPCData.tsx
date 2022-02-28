@@ -1,4 +1,4 @@
-import React, { createContext, useMemo, useState, useEffect } from 'react';
+import React, { createContext, useMemo } from 'react';
 import type { NextPage } from 'next';
 import { getNear, getWallet } from '@services/near';
 import {
@@ -20,8 +20,8 @@ import {
 	claimUserRewardsBySeed,
 	stakeFarmLPTokens,
 } from '@workers/workerNearPresets';
-import SpecialWallet from '@services/SpecialWallet';
 import { Near } from 'near-api-js';
+import AbstractMainWallet from '@ProviderPattern/models/AbstractMainWallet';
 
 export type IPools = {
 	total: number | string | undefined;
@@ -31,7 +31,7 @@ export type IPools = {
 export type INearRPCContext = {
 	config: typeof config;
 	near: Near;
-	getWallet: () => SpecialWallet;
+	getWallet: () => AbstractMainWallet;
 	getNearPresets(): {
 		near_connection: Near;
 		get_list_seeds_info: typeof getListSeedsInfo;
