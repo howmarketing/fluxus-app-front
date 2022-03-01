@@ -1,6 +1,5 @@
 import BN from 'bn.js';
 import { Near } from 'near-api-js';
-import ProviderPattern from '@ProviderPattern/index';
 import { IMainProviderConfig } from '@ProviderPattern/Interfaces';
 import AbstractMainProviderActions from '@ProviderPattern/models/Actions/AbstractMainProviderActions';
 import { functionCall } from 'near-api-js/lib/transaction';

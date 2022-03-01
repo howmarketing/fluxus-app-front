@@ -3,10 +3,9 @@ import { Near, keyStores, utils } from 'near-api-js';
 import { functionCall } from 'near-api-js/lib/transaction';
 import BN from 'bn.js';
 import AbstractMainWallet from '@ProviderPattern/models/AbstractMainWallet';
-import getConfig from './config';
 import ProviderPattern from './ProviderPattern';
 
-const config = getConfig();
+const config = ProviderPattern.getInstance().getProvider().getProviderConfigData();
 
 export const REF_FI_CONTRACT_ID = config.REF_FI_CONTRACT_ID;
 export const FLUXUS_CONTRACT_ID = config.FLUXUS_CONTRACT_ID;
@@ -35,7 +34,7 @@ export const getNear = (): Near => {
 	return nearConnection;
 };
 export const wallet: any = null;
-const walletInstance: any = null;
+
 export const getWallet = (): AbstractMainWallet => ProviderPattern.getProviderInstance().getWallet();
 // if (walletInstance !== null) {
 // 	return walletInstance;

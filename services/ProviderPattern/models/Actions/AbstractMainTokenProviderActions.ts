@@ -21,7 +21,6 @@ import {
 	STORAGE_PER_TOKEN,
 	ONE_MORE_DEPOSIT_AMOUNT,
 } from '@services/creators/storage';
-import { unwrapNear, WRAP_NEAR_CONTRACT_ID } from '@services/wrap-near';
 import { registerTokenAction } from '@services/creators/token';
 import ProviderPattern from '@ProviderPattern/index';
 import AbstractMainProviderActions from './AbstractMainProviderActions';
@@ -194,8 +193,8 @@ export default class AbstractMainTokenProviderActions extends AbstractGenericAct
 	}
 
 	public async withdraw({ token, amount, unregister = false }: WithdrawOptions) {
-		if (token.id === WRAP_NEAR_CONTRACT_ID) {
-			return unwrapNear(amount);
+		if (token.id === this.getProviderConfigData().WRAP_NEAR_CONTRACT_ID) {
+			return this.getProviderActions().getWrapNearActions().unwrapNear(amount);
 		}
 
 		const transactions: Transaction[] = [];

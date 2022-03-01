@@ -2,7 +2,6 @@ import BN from 'bn.js';
 import * as math from 'mathjs';
 import { utils } from 'near-api-js';
 import { toNonDivisibleNumber } from '@utils/numbers';
-import { WRAP_NEAR_CONTRACT_ID } from '@services/wrap-near';
 import { ONE_YOCTO_NEAR, Transaction, executeFarmMultipleTransactions } from '@services/near';
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { ACCOUNT_MIN_STORAGE_AMOUNT } from '@ProviderPattern/models/Actions/AbstractMainAccountProviderAction';
@@ -199,9 +198,9 @@ export default class AbstractMainMTokenProviderAction extends AbstractGenericAct
 			],
 		});
 
-		if (token_id === WRAP_NEAR_CONTRACT_ID) {
+		if (token_id === this.getProviderConfigData().WRAP_NEAR_CONTRACT_ID) {
 			transactions.push({
-				receiverId: WRAP_NEAR_CONTRACT_ID,
+				receiverId: this.getProviderConfigData().WRAP_NEAR_CONTRACT_ID,
 				functionCalls: [
 					{
 						methodName: 'near_withdraw',

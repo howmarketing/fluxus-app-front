@@ -1,14 +1,11 @@
 /* eslint-disable camelcase */
+/* eslint-disable no-underscore-dangle */
+import _ from 'lodash';
+import moment from 'moment/moment';
+import ProviderPattern from '@ProviderPattern/index';
 import AbstractMainProviderActions from '@ProviderPattern/models/Actions/AbstractMainProviderActions';
 import AbstractGenericActions from '@ProviderPattern/models/Actions/AbstractGenericActions';
-/* eslint-disable no-underscore-dangle */
-import _, { trimStart } from 'lodash';
-import moment from 'moment/moment';
-import { parseAction } from '@services/transaction';
-import ProviderPattern from '@ProviderPattern/index';
 import { PoolRPCView } from '@ProviderPattern/models/Actions/AbstractMainProviderAPI';
-import getConfig from '../../../config';
-import { getWallet } from '../../../near';
 
 export type IParseActionView = (action: any) => Promise<{
 	datetime: moment.Moment;
@@ -21,8 +18,6 @@ export type IParseActionView = (action: any) => Promise<{
 export type ActionData = Awaited<ReturnType<IParseActionView>>;
 
 type Awaited<T> = T extends Promise<infer P> ? P : never;
-
-const config = getConfig();
 
 export default class AbstractMainIndexerProviderAction extends AbstractGenericActions {
 	protected declare devImplementation: any;
@@ -80,7 +75,7 @@ export default class AbstractMainIndexerProviderAction extends AbstractGenericAc
 
 	public async get24hVolume(pool_id: string): Promise<string> {
 		this.devImplementation = true;
-		return fetch(`${config.sodakiApiUrl}/pool/${pool_id}/rolling24hvolume/sum`, {
+		return fetch(`${this.getProviderConfigData().sodakiApiUrl}/pool/${pool_id}/rolling24hvolume/sum`, {
 			method: 'GET',
 		})
 			.then(res => res.json())
@@ -89,10 +84,12 @@ export default class AbstractMainIndexerProviderAction extends AbstractGenericAc
 
 	public async parseActionView(action: any) {
 		this.devImplementation = true;
-		const data = await parseAction(action[3], action[4], action[2]);
+		const data = await this.getProviderActions()
+			.getTransactionActions()
+			.parseAction(action[3], action[4], action[2]);
 		return {
 			datetime: moment.unix(action[0] / 1000000000),
-			txUrl: `${config.explorerUrl}/transactions/${action[1]}`,
+			txUrl: `${this.getProviderConfigData().explorerUrl}/transactions/${action[1]}`,
 			data,
 			// status: action[5] === 'SUCCESS_VALUE',
 			status: action[6] && action[6].indexOf('SUCCESS') > -1,
@@ -101,7 +98,7 @@ export default class AbstractMainIndexerProviderAction extends AbstractGenericAc
 
 	public async getYourPools(): Promise<PoolRPCView[]> {
 		this.devImplementation = true;
-		return fetch(`${config.indexerUrl}/liquidity-pools/${this.getWallet().getAccountId()}`, {
+		return fetch(`${this.getProviderConfigData().indexerUrl}/liquidity-pools/${this.getWallet().getAccountId()}`, {
 			method: 'GET',
 			headers: { 'Content-type': 'application/json; charset=UTF-8' },
 		})
@@ -111,7 +108,7 @@ export default class AbstractMainIndexerProviderAction extends AbstractGenericAc
 
 	public async getTopPools(args: any): Promise<PoolRPCView[]> {
 		this.devImplementation = true;
-		return fetch(`${config.indexerUrl}/list-top-pools`, {
+		return fetch(`${this.getProviderConfigData().indexerUrl}/list-top-pools`, {
 			method: 'GET',
 			headers: { 'Content-type': 'application/json; charset=UTF-8' },
 		})
@@ -131,7 +128,7 @@ export default class AbstractMainIndexerProviderAction extends AbstractGenericAc
 
 	public async getPool(pool_id: string): Promise<PoolRPCView> {
 		this.devImplementation = true;
-		return fetch(`${config.indexerUrl}/get-pool?pool_id=${pool_id}`, {
+		return fetch(`${this.getProviderConfigData().indexerUrl}/get-pool?pool_id=${pool_id}`, {
 			method: 'GET',
 			headers: { 'Content-type': 'application/json; charset=UTF-8' },
 		})
@@ -144,7 +141,7 @@ export default class AbstractMainIndexerProviderAction extends AbstractGenericAc
 	public async getPoolsByIds({ pool_ids }: { pool_ids: string[] }): Promise<PoolRPCView[]> {
 		this.devImplementation = true;
 		const ids = pool_ids.join('|');
-		return fetch(`${config.indexerUrl}/list-pools-by-ids?ids=${ids}`, {
+		return fetch(`${this.getProviderConfigData().indexerUrl}/list-pools-by-ids?ids=${ids}`, {
 			method: 'GET',
 			headers: { 'Content-type': 'application/json; charset=UTF-8' },
 		})
@@ -164,7 +161,7 @@ export default class AbstractMainIndexerProviderAction extends AbstractGenericAc
 
 	public async getTokenPriceList(): Promise<any> {
 		this.devImplementation = true;
-		fetch(`${config.indexerUrl}/list-token-price`, {
+		fetch(`${this.getProviderConfigData().indexerUrl}/list-token-price`, {
 			method: 'GET',
 			headers: { 'Content-type': 'application/json; charset=UTF-8' },
 		})
@@ -198,7 +195,7 @@ export default class AbstractMainIndexerProviderAction extends AbstractGenericAc
 
 	public async getLatestActions(): Promise<Array<ActionData>> {
 		const $this = this;
-		return fetch(`${config.indexerUrl}/latest-actions/${$this.getWallet().getAccountId()}`, {
+		return fetch(`${this.getProviderConfigData().indexerUrl}/latest-actions/${$this.getWallet().getAccountId()}`, {
 			method: 'GET',
 			headers: { 'Content-type': 'application/json; charset=UTF-8' },
 		})

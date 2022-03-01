@@ -4,13 +4,30 @@ import AbstractMainProvider from '@ProviderPattern/models/AbstractMainProvider';
 import AbstractMainMTokenProviderAction from '@ProviderPattern/models/Actions/AbstractMainMTokenProviderAction';
 import AbstractMainTokenProviderActions from '@ProviderPattern/models/Actions/AbstractMainTokenProviderActions';
 import AbstractMainVaultProviderActions from '@ProviderPattern/models/Actions/AbstractMainVaultProviderActions';
-import AbstractMainFarmProviderAction from './AbstractMainFarmProviderAction';
-import AbstractMainFTContractProviderAction from './AbstractMainFTContractProviderAction';
-import AbstractMainPoolProviderAction from './AbstractMainPoolProviderAction';
-import AbstractMainSwapProviderAction from './AbstractMainSwapProviderAction';
-import AbstractMainProviderAPI from './AbstractMainProviderAPI';
-import AbstractMainIndexerProviderAction from './AbstractMainIndexerProviderAction';
+import AbstractMainFarmProviderAction from '@ProviderPattern/models/Actions/AbstractMainFarmProviderAction';
+import AbstractMainFTContractProviderAction from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
+import AbstractMainPoolProviderAction from '@ProviderPattern/models/Actions/AbstractMainPoolProviderAction';
+import AbstractMainSwapProviderAction from '@ProviderPattern/models/Actions/AbstractMainSwapProviderAction';
+import AbstractMainProviderAPI from '@ProviderPattern/models/Actions/AbstractMainProviderAPI';
+import AbstractMainIndexerProviderAction from '@ProviderPattern/models/Actions/AbstractMainIndexerProviderAction';
+import AbstractMainWrapNearProviderAction from '@ProviderPattern/models/Actions/AbstractMainWrapNearProviderAction';
+import AbstractMainTransactionProviderAction from '@ProviderPattern/models/Actions/AbstractMainTransactionProviderAction';
 
+/**
+ * MANAGE THE AVAILABLE ACTIONS FOR PROVIDER
+ * 		-	AbstractMainProvider
+ * 		-	AbstractMainProviderAPI
+ * 		-	AbstractMainIndexerProviderAction
+ * 		-	AbstractMainAccountProviderAction
+ * 		-	AbstractMainFTContractProviderAction
+ * 		-	AbstractMainFarmProviderAction
+ * 		-	AbstractMainMTokenProviderAction
+ * 		-	AbstractMainPoolProviderAction
+ * 		-	AbstractMainTokenProviderActions
+ * 		-	AbstractMainVaultProviderActions
+ * 		-	AbstractMainWrapNearProviderAction
+ * 		-	AbstractMainTransactionProviderAction
+ */
 export default class AbstractMainProviderActions implements MainProviderActionsInterface {
 	private static _classInstanceSingleton: AbstractMainProviderActions;
 
@@ -36,8 +53,13 @@ export default class AbstractMainProviderActions implements MainProviderActionsI
 
 	private declare _VaultActionsInstance: AbstractMainVaultProviderActions;
 
-	private declare _TransactionActionsInstance: object | undefined;
+	private declare _WrapNearActionsInstance: AbstractMainWrapNearProviderAction;
 
+	private declare _TransactionActionsInstance: AbstractMainTransactionProviderAction;
+
+	/**
+	 * GET THE SINGLETON INSTANCE FOR THIS MANAGER OF ACTIONS
+	 */
 	public static getInstance(providerProtocolInstance: AbstractMainProvider): AbstractMainProviderActions {
 		if (this._classInstanceSingleton) {
 			return this._classInstanceSingleton;
@@ -47,6 +69,9 @@ export default class AbstractMainProviderActions implements MainProviderActionsI
 		return this._classInstanceSingleton;
 	}
 
+	/**
+	 * DEFINE THE INSTANCES FOR PROVIDER ACTIONS
+	 */
 	private setUp(providerProtocolInstance: AbstractMainProvider) {
 		this._ProviderProtocolInstance = providerProtocolInstance;
 		this._APIActionsInstance = AbstractMainProviderAPI.getInstance(this);
@@ -59,54 +84,99 @@ export default class AbstractMainProviderActions implements MainProviderActionsI
 		this._SwapActionsInstance = AbstractMainSwapProviderAction.getInstance(this);
 		this._TokenActionsInstance = AbstractMainTokenProviderActions.getInstance(this);
 		this._VaultActionsInstance = AbstractMainVaultProviderActions.getInstance(this);
-		this._TransactionActionsInstance = undefined;
+		this._WrapNearActionsInstance = AbstractMainWrapNearProviderAction.getInstance(this);
+		this._TransactionActionsInstance = AbstractMainTransactionProviderAction.getInstance(this);
 	}
 
-	public getProviderProtocolInstance() {
+	/**
+	 * GET THE PROVIDER PROTOCOL AS PARENT INSTANTIATED FROM CURRENT PROVIDER INSTANCE
+	 *
+	 */
+	public getProviderProtocolInstance(): AbstractMainProvider {
 		return this._ProviderProtocolInstance;
 	}
 
-	public getAPIActions() {
+	/**
+	 * GET THE ACTIONS FOR API AS CLASS INSTANCE
+	 */
+	public getAPIActions(): AbstractMainProviderAPI {
 		return this._APIActionsInstance;
 	}
 
-	public getIndexerActions() {
+	/**
+	 * GET THE ACTIONS FOR INDEXER AS CLASS INSTANCE
+	 */
+	public getIndexerActions(): AbstractMainIndexerProviderAction {
 		return this._IndexerActionsInstance;
 	}
 
-	public getAccountActions() {
+	/**
+	 * GET THE ACTIONS FOR ACCOUNT AS CLASS INSTANCE
+	 */
+	public getAccountActions(): AbstractMainAccountProviderAction {
 		return this._AccountActionsInstance;
 	}
 
-	public getFTContractActions() {
+	/**
+	 * GET THE ACTIONS FOR CONTRACT AS CLASS INSTANCE
+	 */
+	public getFTContractActions(): AbstractMainFTContractProviderAction {
 		return this._FTContractActionsInstance;
 	}
 
-	public getFarmActions() {
+	/**
+	 * GET THE ACTIONS FOR FARM AS CLASS INSTANCE
+	 */
+	public getFarmActions(): AbstractMainFarmProviderAction {
 		return this._FarmActionsInstance;
 	}
 
-	public getMTokenActions() {
+	/**
+	 * GET THE ACTIONS FOR MTOKEN AS CLASS INSTANCE
+	 */
+	public getMTokenActions(): AbstractMainMTokenProviderAction {
 		return this._MTokenActionsInstance;
 	}
 
-	public getPoolActions() {
+	/**
+	 * GET THE ACTIONS FOR POOL AS CLASS INSTANCE
+	 */
+	public getPoolActions(): AbstractMainPoolProviderAction {
 		return this._PoolActionsInstance;
 	}
 
-	public getSwapActions() {
+	/**
+	 * GET THE ACTIONS FOR SWAP AS CLASS INSTANCE
+	 */
+	public getSwapActions(): AbstractMainSwapProviderAction {
 		return this._SwapActionsInstance;
 	}
 
-	public getTokenActions() {
+	/**
+	 * GET THE ACTIONS FOR TOKEN AS CLASS INSTANCE
+	 */
+	public getTokenActions(): AbstractMainTokenProviderActions {
 		return this._TokenActionsInstance;
 	}
 
-	public getVaultActions() {
+	/**
+	 * GET THE ACTIONS FOR VAULT AS CLASS INSTANCE
+	 */
+	public getVaultActions(): AbstractMainVaultProviderActions {
 		return this._VaultActionsInstance;
 	}
 
-	public getTransactionActions() {
+	/**
+	 * GET THE ACTIONS FOR WRAPNEAR AS CLASS INSTANCE
+	 */
+	public getWrapNearActions(): AbstractMainWrapNearProviderAction {
+		return this._WrapNearActionsInstance;
+	}
+
+	/**
+	 * GET THE ACTIONS FOR TRANSACTIONS AS CLASS INSTANCE
+	 */
+	public getTransactionActions(): AbstractMainTransactionProviderAction {
 		return this._TransactionActionsInstance;
 	}
 }

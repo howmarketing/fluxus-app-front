@@ -1,13 +1,12 @@
 /* eslint-disable no-async-promise-executor */
 /* eslint-disable camelcase */
 /* eslint-disable no-await-in-loop */
-import getConfig from '@services/config';
 import { getNear, getWallet } from '@services/near';
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { BlockReference, CallFunctionRequest } from 'near-api-js/lib/providers/provider';
 import ProviderPattern from '@ProviderPattern/index';
 
-export const config = getConfig('testnet');
+export const config = ProviderPattern.getInstance().getProvider().getProviderConfigData();
 
 const MAX_PER_PAGE = 100;
 export const getUseAllPools = async () => getTotalPools();

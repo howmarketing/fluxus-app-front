@@ -3,7 +3,7 @@
 import Dexie from 'dexie';
 import _ from 'lodash';
 import moment from 'moment';
-import getConfig from '@services/config';
+import ProviderPattern from '@ProviderPattern/index';
 
 interface Pool {
 	id: number;
@@ -209,7 +209,11 @@ class RefDatabase extends Dexie {
 			.and(
 				item =>
 					Number(item.update_time) >=
-					Number(moment().unix()) - Number(getConfig().POOL_TOKEN_REFRESH_INTERVAL),
+					Number(moment().unix()) -
+						Number(
+							ProviderPattern.getInstance().getProvider().getProviderConfigData()
+								.POOL_TOKEN_REFRESH_INTERVAL,
+						),
 			)
 			.toArray();
 		const reverseItems = await this.poolsTokens
@@ -219,7 +223,11 @@ class RefDatabase extends Dexie {
 			.and(
 				item =>
 					Number(item.update_time) >=
-					Number(moment().unix()) - Number(getConfig().POOL_TOKEN_REFRESH_INTERVAL),
+					Number(moment().unix()) -
+						Number(
+							ProviderPattern.getInstance().getProvider().getProviderConfigData()
+								.POOL_TOKEN_REFRESH_INTERVAL,
+						),
 			)
 			.toArray();
 
