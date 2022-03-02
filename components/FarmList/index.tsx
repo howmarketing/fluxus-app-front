@@ -13,6 +13,7 @@ import { toReadableNumber } from '@utils/numbers';
 import { IPoolFiatPrice } from '@ProviderPattern/models/Actions/AbstractMainProviderAPI';
 import { IPopulatedPoolExtraDataToken, IPopulatedPoolExtraDataVolume } from '@components/VaultList';
 import ProviderPattern from '@ProviderPattern/index';
+import { useSWRFunction } from '@hooks/useSWRFunction';
 import { WrapBox, SwitchArea, SwitchAreaTitle, SwitchAreaTitleTag, ProgressArea } from './styles';
 
 export type IPopulatedPool = PoolDetails & { populated_tokens: Array<TokenMetadata>; shares_lptoken: any };
@@ -179,6 +180,13 @@ const FarmList: React.FC = function () {
 		return populatedSeeds;
 	};
 
+	const farmsSWR = useSWRFunction({
+		endpoint: `farmsSWR-${useFluxusFarmContractState ? 'fluxus' : 'ref'}`,
+		functionToExec: getPopulatedSeeds,
+		argsToExecFunction: {},
+		inUseState: FarmsState,
+		settableInUseState: setFarmsState,
+	});
 	const loadFarms = async () => {
 		setFarmBoxMinHeightWithCurrentHeight();
 		// Array of IPopulatedSeed data object
@@ -227,12 +235,12 @@ const FarmList: React.FC = function () {
 		const DOMLoaded = true;
 		(async () => {
 			if (DOMLoaded) {
-				loadFarms();
-				checkTransactions();
+				// loadFarms();
+				// checkTransactions();
 			}
 		})();
 		return () => {
-			setFarmsState([]);
+			// setFarmsState([]);
 			setTransactionHashs([]);
 		};
 	}, [useFluxusFarmContractState]);

@@ -1,5 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import React, { useEffect, useState, ReactElement } from 'react';
+import CryptoJS from 'crypto-js';
+import SHA1 from 'crypto-js/sha1';
 import Switch from 'react-switch';
 import { useNearRPCContext } from '@hooks/index';
 import { IFarmData as IVaultData, ISeedInfo, PoolDetails, PoolVolumes } from '@workers/workerNearPresets';
@@ -9,6 +11,7 @@ import { ICardVaultState } from '@components/CardVault';
 import { IPoolFiatPrice } from '@ProviderPattern/models/Actions/AbstractMainProviderAPI';
 import ProviderPattern from '@ProviderPattern/index';
 import { getWallet } from '@services/near';
+import { useSWRFunction } from '@hooks/useSWRFunction';
 import { WrapBox, SwitchArea, SwitchAreaTitle, SwitchAreaTitleTag, ListVaultsBox } from './styles';
 
 export type IPopulatedPoolExtraDataToken = { populated_tokens: Array<TokenMetadata>; shares_lptoken: any };
@@ -102,8 +105,7 @@ const VaultList: React.FC = function () {
 			.getFarmActions()
 			.getStakedListByAccountId({ useFluxusFarmContract });
 
-	const loadVaults = async () => {
-		setVaultBoxMinHeightWithCurrentHeight();
+	const getVaults = async () => {
 		// get all user staked LP Tokens
 		const stakedLists = [
 			getStakedListByAccountId({ useFluxusFarmContract: useFluxusVaultContractState }),
@@ -273,7 +275,12 @@ const VaultList: React.FC = function () {
 				return populateSeed;
 			}),
 		);
-		// All rewards available from farm contract
+		return populatedSeeds;
+	};
+
+	const loadVaults = async () => {
+		setVaultBoxMinHeightWithCurrentHeight();
+		const populatedSeeds = await getVaults();
 		setTimeout(() => {
 			setVaultsState(populatedSeeds);
 			console.log(populatedSeeds);
@@ -283,12 +290,63 @@ const VaultList: React.FC = function () {
 		}, 200);
 	};
 
-	useEffect(() => {
-		loadVaults();
-		return () => {
+	const encryptSHA1 = (data: any): string | undefined | CryptoJS.lib.WordArray => {
+		try {
+			if (typeof data === 'string') {
+				try {
+					return SHA1(data).toString();
+				} catch (stringErr: any) {
+					console.error(stringErr);
+					return undefined;
+				}
+			}
+			try {
+				return SHA1(JSON.stringify(data)).toString();
+			} catch (jsonErr: any) {
+				console.error(jsonErr);
+				return undefined;
+			}
+		} catch (e: any) {
+			console.error(e);
+			return undefined;
+		}
+	};
+
+	const vaultsSWR = useSWRFunction({
+		endpoint: `vaultsSWR-${useFluxusVaultContractState ? 'fluxus' : 'ref'}`,
+		functionToExec: getVaults,
+		argsToExecFunction: {},
+		inUseState: VaultsState,
+		settableInUseState: setVaultsState,
+	});
+
+	const manualVerifyToSetState = () => {
+		console.log(`Changed SWR(${vaultsSWR.endpoint}):`, vaultsSWR);
+		if (!vaultsSWR?.data) {
+			return;
+		}
+		const vaultStateSHA1 = encryptSHA1(VaultsState);
+		const SWRSHA1 = encryptSHA1(vaultsSWR.data);
+		console.log({
+			vault_state: { sha1: vaultStateSHA1, data: VaultsState },
+			vault_swr: { sha1: SWRSHA1, data: vaultsSWR.data },
+			is_diff: vaultStateSHA1 !== SWRSHA1,
+		});
+		if (vaultStateSHA1 !== SWRSHA1) {
+			setVaultsState(vaultsSWR.data);
+		}
+	};
+
+	// useEffect(() => {
+	// 	const a = '';
+	// }, [vaultsSWR]);
+
+	useEffect(
+		() => () => {
 			setVaultsState([]);
-		};
-	}, [useFluxusVaultContractState]);
+		},
+		[useFluxusVaultContractState],
+	);
 
 	return (
 		<>

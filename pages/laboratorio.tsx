@@ -19,6 +19,8 @@ import AbstractMainProvider from '@ProviderPattern/models/AbstractMainProvider';
 import MainProvider from '@ProviderPattern/models/MainProvider';
 import { BN } from 'bn.js';
 import { toNonDivisibleNumber } from '@utils/numbers';
+import { useSWRFunction } from '@hooks/useSWRFunction';
+import { makeWait } from '@utils/returns';
 import { homePageMetaDescribes } from '../consts';
 
 /**
@@ -113,7 +115,7 @@ const Laboratorio: NextPage = function () {
 			});
 			return;
 		}
-		console.log('defining function: ', DOMFunctionNameAsWindowKey);
+		// console.log('defining function: ', DOMFunctionNameAsWindowKey);
 		Object.defineProperty(window, DOMFunctionNameAsWindowKey, { value: executableFunction, writable: true });
 	};
 
@@ -557,7 +559,7 @@ console.log("${displayFunctionAccessName}_response: ", ${displayFunctionAccessNa
 				label: `${label || ''} (${Number(actions.length) + 1})`,
 				functionToBeExecuted: pushFunctionToBeExecuted,
 			};
-			console.log('Pushing action: ', pushData);
+			// console.log('Pushing action: ', pushData);
 			actions.push(pushData);
 			defineDOMFunction({
 				DOMPrefixFunctionName: 'action_',
@@ -567,6 +569,15 @@ console.log("${displayFunctionAccessName}_response: ", ${displayFunctionAccessNa
 			});
 		};
 
+		// List Seeds
+		pushAction({
+			id: 'listSeeds',
+			methodName: 'listSeeds',
+			label: 'List Seeds',
+			args: { useFluxusVaultContractState: false },
+			functionName: 'listSeeds',
+			functionToBeExecuted: listSeeds,
+		});
 		// Load Vaults
 		// List all farms from farm contract (Ref / Fluxus)
 		pushAction({
@@ -832,12 +843,39 @@ console.log("${displayFunctionAccessName}_response: ", ${displayFunctionAccessNa
 	const getUserBalance = () => getWallet().account().getBalance();
 	const repeatMatrix = (qt = 20) =>
 		Object.assign(new Array(qt).fill(1), []).map((itemA, index) => Number(itemA) + Number(index));
+
+	const listSeeds = async ({ page = 1, perPage = 100, useFluxusFarmContract = false }) => {
+		await makeWait(15000);
+		return ProviderPattern.getInstance().getProvider().getProviderActions().getFarmActions().listFarms({
+			page,
+			perPage,
+			useFluxusFarmContract,
+		});
+	};
+
+	const farms = useSWRFunction({
+		endpoint: 'listFarmsSWR',
+		functionToExec: listSeeds,
+		argsToExecFunction: { page: 1, perPage: 100, useFluxusFarmContract: false },
+	});
+	const [farmsState, setFarmsState] = useState<Array<any> | Record<any, any>>([] as Array<any>);
+	useEffect(() => {
+		console.log('farms: ', farms);
+		try {
+			if (!(farms.data?.length > 0)) {
+				return;
+			}
+			setFarmsState(farms.data);
+		} catch (e: any) {
+			console.error(e);
+		}
+	}, [farms]);
 	useEffect(() => {
 		setTestActionsState();
 	}, []);
 
 	useEffect(() => {
-		console.log(actionsState);
+		console.log('actionsState: ', actionsState);
 	}, [actionsState]);
 
 	return (
@@ -853,6 +891,7 @@ console.log("${displayFunctionAccessName}_response: ", ${displayFunctionAccessNa
 					backgroundColor: '#100317',
 				}}>
 				<>
+					{JSON.stringify(farmsState)}
 					{/* <ToastNotify theme="DARK" Icon={Money} autoClose={12000} title="Money..." />
 					<ToastNotify theme="LIGHT" Icon={ContactMail} autoClose={12000} title="Sending mail to..." /> */}
 					<H1 title="Laboratório de testes.">Laboratório de testes.</H1>

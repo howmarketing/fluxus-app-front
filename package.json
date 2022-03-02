@@ -18,6 +18,7 @@
         "bignumber.js": "^9.0.1",
         "bn.js": "^5.2.0",
         "comlink": "^4.3.1",
+        "crypto-js": "^4.1.1",
         "dexie": "^3.2.0",
         "fs": "^0.0.1-security",
         "lodash": "^4.17.21",
@@ -43,12 +44,14 @@
         "react-tooltip": "^4.2.21",
         "recharts": "^2.1.8",
         "styled-components": "^5.3.3",
+        "swr": "^1.2.2",
         "web3": "^1.7.0",
         "webpack": "^5.65.0"
     },
     "devDependencies": {
         "@types/bn.js": "^5.1.0",
         "@types/cookie": "^0.4.1",
+        "@types/crypto-js": "^4.1.1",
         "@types/lodash": "^4.14.177",
         "@types/mathjs": "^9.4.2",
         "@types/node": "16.11.9",

@@ -7,6 +7,7 @@ import { PoolRPCView } from '@ProviderPattern/models/Actions/AbstractMainProvide
 import AbstractMainProviderActions from '@ProviderPattern/models/Actions/AbstractMainProviderActions';
 import AbstractGenericActions from '@ProviderPattern/models/Actions/AbstractGenericActions';
 import ProviderPattern from '@ProviderPattern/index';
+import { useSWRFunction } from '@hooks/useSWRFunction';
 import { refFarmFunctionCall, refFarmViewFunction, Transaction, executeFarmMultipleTransactions } from '../../../near';
 import { storageDepositAction, STORAGE_TO_REGISTER_WITH_MFT } from '../../../../services/creators/storage';
 
@@ -101,15 +102,46 @@ export default class AbstractMainFarmProviderAction extends AbstractGenericActio
 	public async getSeeds({
 		page = 1,
 		perPage = DEFAULT_PAGE_LIMIT,
+		useFluxusFarmContract = false,
 	}: {
 		page?: number;
 		perPage?: number;
+		useFluxusFarmContract?: boolean;
 	}): Promise<Record<string, string>> {
 		this.devImplementation = true;
 		const index = (page - 1) * perPage;
 		const seedDatas = await refFarmViewFunction({
 			methodName: 'list_seeds',
 			args: { from_index: index, limit: perPage },
+			useFluxusFarmContract,
+		});
+
+		return seedDatas;
+	}
+
+	public async listFarmsSWR({ page = 1, perPage = DEFAULT_PAGE_LIMIT, useFluxusFarmContract = false }) {
+		return useSWRFunction({
+			endpoint: 'listFarmsSWR',
+			functionToExec: this.listFarms,
+			argsToExecFunction: { page, perPage, useFluxusFarmContract },
+		});
+	}
+
+	public async listFarms({
+		page = 1,
+		perPage = DEFAULT_PAGE_LIMIT,
+		useFluxusFarmContract = false,
+	}: {
+		page?: number;
+		perPage?: number;
+		useFluxusFarmContract?: boolean;
+	}): Promise<Record<string, string>> {
+		this.devImplementation = true;
+		const index = (page - 1) * perPage;
+		const seedDatas = await refFarmViewFunction({
+			methodName: 'list_farms',
+			args: { from_index: index, limit: perPage },
+			useFluxusFarmContract,
 		});
 
 		return seedDatas;
