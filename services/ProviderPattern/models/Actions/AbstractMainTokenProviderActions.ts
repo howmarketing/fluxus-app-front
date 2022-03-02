@@ -240,12 +240,16 @@ export default class AbstractMainTokenProviderActions extends AbstractGenericAct
 		return executeMultipleTransactions(transactions);
 	}
 
-	public getTokenBalances(fluxusContractName = '', debug = false): Promise<TokenBalancesView> {
+	public getTokenBalances({
+		account_id = this.getWallet().getAccountId(),
+		fluxusContractName = '',
+		debug = false,
+	}): Promise<TokenBalancesView> {
 		this.devImplementation = true;
-		const wallet = this.getWallet();
+
 		return refFiViewFunction({
 			methodName: 'get_deposits',
-			args: { account_id: wallet.getAccountId() },
+			args: { account_id },
 			fluxusContractName,
 			debug,
 		});

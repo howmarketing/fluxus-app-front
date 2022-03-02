@@ -3,7 +3,7 @@ import React, { useEffect, useState, ButtonHTMLAttributes } from 'react';
 import Switch from 'react-switch';
 import { useNearRPCContext } from '@hooks/index';
 import { toReadableNumber } from '@utils/numbers';
-import { IUserListRewards } from '@workers/workerNearPresets';
+import { IUserListRewards } from '@ProviderPattern/models/Actions/AbstractMainFarmProviderAction';
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { nearWalletAsWindow } from '@utils/nearWalletAsWindow';
 import ButtonPrimary from '@components/ButtonPrimary';
@@ -63,33 +63,10 @@ export const CardUserRewards: React.FC<CardUserRewardsProps> = function ({ ...pr
 		setCheckedRewardsToWithdrawState(withdrawList);
 	};
 
-	// Will be deleted after finish some laboratorial tests
-	const getUserListDeposits = async (): Promise<IUserListDeposits> => {
-		if (!nearRPCContext.getWallet().isSignedIn()) {
-			return [] as IUserListDeposits;
-		}
-		const deposits = await nearRPCContext.getNearPresets().get_user_list_deposits();
-		const depositAmounts = Object.values(deposits);
-		const depositsPopulated = await Promise.all(
-			Object.keys(deposits).map(async (tokenId: string, index: number) => {
-				const tokenMetaData = await ProviderPattern.getInstance()
-					.getProvider()
-					.getProviderActions()
-					.getFTContractActions()
-					.ftGetTokenMetadata(tokenId);
-				return {
-					amount: depositAmounts[index],
-					...tokenMetaData,
-				} as IUserDeposit;
-			}),
-		);
-		return depositsPopulated;
-	};
-
 	const formatListOfTokenAndValueToRewardList = async (
 		tokenAndValueList: IUserListRewards,
 	): Promise<Array<IPopulatedReward>> => {
-		if (!nearRPCContext.getWallet().isSignedIn()) {
+		if (!ProviderPattern.getProviderInstance().getWallet().isSignedIn()) {
 			return [];
 		}
 		const rewardsEntries = Object.entries(tokenAndValueList);
@@ -124,15 +101,18 @@ export const CardUserRewards: React.FC<CardUserRewardsProps> = function ({ ...pr
 
 	const defineUserRewardListToState = async () => {
 		setCheckedRewardsToWithdrawState([] as ICheckedRewardsToWithDraw);
-		const userRewards = await nearRPCContext
-			.getNearPresets()
-			.get_user_list_rewards(undefined, useFluxusFarmContractState);
+		const userRewards = await ProviderPattern.getProviderInstance()
+			.getProviderActions()
+			.getFarmActions()
+			.getRewards({
+				useFluxusFarmContract: useFluxusFarmContractState,
+			});
 		const fomartedRewards = await formatListOfTokenAndValueToRewardList(userRewards);
 		setUserRewardTokensState(fomartedRewards);
 	};
 
 	useEffect(() => {
-		if (nearRPCContext.getWallet().isSignedIn()) {
+		if (ProviderPattern.getProviderInstance().getWallet().isSignedIn()) {
 			defineUserRewardListToState();
 		}
 	}, [useFluxusFarmContractState]);
@@ -173,7 +153,9 @@ export const CardUserRewards: React.FC<CardUserRewardsProps> = function ({ ...pr
 			</WrapCenterView>
 			<CardURewardsStyle
 				title={`User ${
-					nearRPCContext.getWallet().isSignedIn() ? nearRPCContext.getWallet().getAccountId() : ' '
+					ProviderPattern.getProviderInstance().getWallet().isSignedIn()
+						? ProviderPattern.getProviderInstance().getWallet().getAccountId()
+						: ' '
 				} Reward Tokens`}
 				selectedRewardFunction={onSelectRewardToWithdraw}
 				rewards={userRewardTokensState}
@@ -201,15 +183,17 @@ export const CardURewardsFooter = ({
 	useFluxusFarmContractState: boolean;
 	defineUserRewardListToState: () => Promise<any>;
 }) => {
-	const nearRPCContext = useNearRPCContext();
 	const [walletIsSignedState, setWalletIsSignedState] = useState<boolean>(false);
 	const [withdrawLoadingState, setWithdrawLoadingState] = useState<boolean>(true);
 	const walletWindow = nearWalletAsWindow;
 
 	const requestWalletConnection = async () => {
 		try {
-			const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<INearRPCContext>();
-			await windowWalletProvider.getWallet().requestSignIn(nearRPCContext.config.FLUXUS_VAULT_CONTRACT_ID);
+			const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<ProviderPattern>(true);
+			await windowWalletProvider
+				.getProvider()
+				.getWallet()
+				.requestSignIn(ProviderPattern.getProviderInstance().getProviderConfigData().FLUXUS_VAULT_CONTRACT_ID);
 			const walletResponse = await nearWalletAsWindow.getWalletCallback();
 			if (!walletResponse.success) {
 				alert(walletResponse.message);
@@ -231,7 +215,7 @@ export const CardURewardsFooter = ({
 	const doWithDraw = async () => {
 		setWithdrawLoadingState(true);
 		const checkedRewardList: IWithdrawReward = {} as IWithdrawReward;
-		const windowWalletProvider = await walletWindow.getWindowWalletRPC<INearRPCContext>();
+		const windowWalletProvider = await walletWindow.getWindowWalletRPC<ProviderPattern>(true);
 		try {
 			try {
 				checkedRewards.forEach((reward, offset: number) => {
@@ -250,8 +234,10 @@ export const CardURewardsFooter = ({
 
 			try {
 				await windowWalletProvider
-					.getNearPresets()
-					.withdraw_user_rewards(checkedRewardList, false, useFluxusFarmContractState);
+					.getProvider()
+					.getProviderActions()
+					.getMTokenActions()
+					.withdrawAllReward(checkedRewardList, false, useFluxusFarmContractState);
 			} catch (e: any) {
 				console.error(e);
 				throw new Error(`${e?.message || 'Unknown'}`);
@@ -316,7 +302,7 @@ export const CardURewardsFooter = ({
 			if (!DOMLoaded) {
 				return;
 			}
-			setWalletIsSignedState(nearRPCContext.getWallet().isSignedIn());
+			setWalletIsSignedState(ProviderPattern.getProviderInstance().getWallet().isSignedIn());
 			await new Promise(resolve => {
 				setTimeout(() => {
 					resolve(true);

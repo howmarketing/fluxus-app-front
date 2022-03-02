@@ -3,15 +3,19 @@ import React, { useEffect, useState, ReactElement } from 'react';
 import CryptoJS from 'crypto-js';
 import SHA1 from 'crypto-js/sha1';
 import Switch from 'react-switch';
-import { useNearRPCContext } from '@hooks/index';
-import { IFarmData as IVaultData, ISeedInfo, PoolDetails, PoolVolumes } from '@workers/workerNearPresets';
+import { useSWRFunction } from '@hooks/useSWRFunction';
+import ProviderPattern from '@ProviderPattern/index';
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
+import { IPoolFiatPrice } from '@ProviderPattern/models/Actions/AbstractMainProviderAPI';
+import {
+	IFarmData as IVaultData,
+	ISeedInfo,
+	PoolDetails,
+	PoolVolumes,
+} from '@ProviderPattern/models/Actions/AbstractMainFarmProviderAction';
 import CardVault from '@components/CardVault/index';
 import { ICardVaultState } from '@components/CardVault';
-import { IPoolFiatPrice } from '@ProviderPattern/models/Actions/AbstractMainProviderAPI';
-import ProviderPattern from '@ProviderPattern/index';
-import { getWallet } from '@services/near';
-import { useSWRFunction } from '@hooks/useSWRFunction';
+
 import { WrapBox, SwitchArea, SwitchAreaTitle, SwitchAreaTitleTag, ListVaultsBox } from './styles';
 
 export type IPopulatedPoolExtraDataToken = { populated_tokens: Array<TokenMetadata>; shares_lptoken: any };
@@ -42,8 +46,6 @@ export type IPopulatedSeed = ISeedInfo & {
 
 export type IDefaultVaultItemData = ICardVaultState & { id: string | number };
 const VaultList: React.FC = function () {
-	const nearRPCContext = useNearRPCContext();
-	const nearPresets = nearRPCContext.getNearPresets();
 	// Used to keep box height size while rendering the list of farms.
 	const [stateVaultsBoxCssStyleProperties, setStateVaultsBoxCssStyleProperties] = useState<React.CSSProperties>({
 		minHeight: '300px',
@@ -115,21 +117,29 @@ const VaultList: React.FC = function () {
 
 		// Object with key as farm_id and value as farm data
 		const farmsObject: Record<any, any> = {};
+		const farmsList = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFarmActions()
+			.listFarms({ page: 1, perPage: 100, useFluxusFarmContract: useFluxusVaultContractState });
 		// Array of all object farmData
-		const Vaults = (await nearPresets.get_farms(1, useFluxusVaultContractState)).map((farm, index: number) => {
+		farmsList.map((farm, index: number) => {
 			farmsObject[farm.farm_id] = farm;
 			return farm;
 		});
 		// Filter for just with pool seed
-		const listSeeds = Object.values(await nearPresets.get_list_seeds_info(1, useFluxusVaultContractState)).filter(
-			(seed, seedIndex: number) => {
-				const poolId = parseInt(seed.seed_id.split('@').splice(1, 1).join(''), 10);
-				if (Number.isNaN(poolId) || poolId < 1) {
-					return 0;
-				}
-				return 1;
-			},
-		);
+		const seedsInfo = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFarmActions()
+			.getListSeedsInfo({ page: 1, limit: 100, useFluxusFarmContract: useFluxusVaultContractState });
+		const listSeeds = Object.values(seedsInfo).filter((seed, seedIndex: number) => {
+			const poolId = parseInt(seed.seed_id.split('@').splice(1, 1).join(''), 10);
+			if (Number.isNaN(poolId) || poolId < 1) {
+				return 0;
+			}
+			return 1;
+		});
 		// Array of IPopulatedSeed data object
 		// TODO: This should be moved to a context
 		const populatedSeeds: Array<IPopulatedSeed> = await Promise.all(
@@ -254,7 +264,7 @@ const VaultList: React.FC = function () {
 
 				// Define vault user shares info
 				const defineVaultUserSharesInfo = async () => {
-					if (!getWallet().isSignedIn()) {
+					if (!ProviderPattern.getInstance().getProvider().getWallet().isSignedIn()) {
 						return;
 					}
 					const vaultUserShares = await vaultActions.getUserShares({ seed_id: populateSeed.seed_id });

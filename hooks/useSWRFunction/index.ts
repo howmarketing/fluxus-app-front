@@ -34,7 +34,7 @@ export function useSWRFunction<Data = any, Error = any>(
 			const data = await functionToExec(...args);
 			return data;
 		},
-		{ refreshInterval: 120000, revalidateIfStale: false },
+		{ refreshInterval: 360000, revalidateIfStale: false },
 	);
 	const response = {
 		requested_in: requestedIn,

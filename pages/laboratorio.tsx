@@ -1,26 +1,24 @@
 /* eslint-disable no-alert */
 import React, { useEffect, useState } from 'react';
+import { BN } from 'bn.js';
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import { useNearData } from '@hooks/useNearData';
-import Landing from '@components/Landing';
-import { H1 } from '@components/HomePage/styles';
-import ToastNotify, { dispatchToastNotify } from '@components/ToastNotify';
-import { getWallet } from '@services/near';
-import { ICallbackData, nearWalletAsWindow } from '@utils/nearWalletAsWindow';
-import ProviderPattern from '@services/ProviderPattern';
-import ButtonGhost from '@components/ButtonGhost';
-import { useNearRPCContext } from '@hooks/index';
-import { IPopulatedPoolExtraDataToken, IPopulatedPoolExtraDataVolume, IPopulatedSeed } from '@components/VaultList';
-import { IFarmData as IVaultData } from '@workers/workerNearPresets';
-import AbstractMainProviderAPI, { IPoolFiatPrice } from '@ProviderPattern/models/Actions/AbstractMainProviderAPI';
+import { IFarmData as IVaultData } from '@ProviderPattern/models/Actions/AbstractMainFarmProviderAction';
+import { IPoolFiatPrice } from '@ProviderPattern/models/Actions/AbstractMainProviderAPI';
 import AbstractMainVaultProviderActions from '@ProviderPattern/models/Actions/AbstractMainVaultProviderActions';
 import AbstractMainProvider from '@ProviderPattern/models/AbstractMainProvider';
 import MainProvider from '@ProviderPattern/models/MainProvider';
-import { BN } from 'bn.js';
 import { toNonDivisibleNumber } from '@utils/numbers';
-import { useSWRFunction } from '@hooks/useSWRFunction';
+import { ICallbackData, nearWalletAsWindow } from '@utils/nearWalletAsWindow';
 import { makeWait } from '@utils/returns';
+import { getWallet } from '@services/near';
+import ProviderPattern from '@services/ProviderPattern';
+import Landing from '@components/Landing';
+import { H1 } from '@components/HomePage/styles';
+import ToastNotify, { dispatchToastNotify } from '@components/ToastNotify';
+import ButtonGhost from '@components/ButtonGhost';
+import { IPopulatedPoolExtraDataToken, IPopulatedPoolExtraDataVolume, IPopulatedSeed } from '@components/VaultList';
 import { homePageMetaDescribes } from '../consts';
 
 /**
@@ -35,7 +33,6 @@ import { homePageMetaDescribes } from '../consts';
  */
 const Laboratorio: NextPage = function () {
 	const { nearPriceState } = useNearData();
-	const nearRPCContext = useNearRPCContext();
 
 	// Console log provider pattern instance
 	const getProviderPattern = async (DOMProviderPatternName: any = 'ProviderPattern'): Promise<any> => {
@@ -310,7 +307,6 @@ const Laboratorio: NextPage = function () {
 	 * @description Testing some ways to calculate the user experience with callback data as view interface
 	 */
 	const loadVaults = async ({ useFluxusVaultContractState = false }) => {
-		const nearPresets = nearRPCContext.getNearPresets();
 		// get all user staked LP Tokens
 		const userStakedList = await ProviderPattern.getInstance()
 			.getProvider()
@@ -319,21 +315,29 @@ const Laboratorio: NextPage = function () {
 			.getStakedListByAccountId({ useFluxusFarmContract: useFluxusVaultContractState });
 		// Object with key as farm_id and value as farm data
 		const farmsObject: Record<any, any> = {};
+		const farmsList = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFarmActions()
+			.listFarms({ page: 1, perPage: 100, useFluxusFarmContract: useFluxusVaultContractState });
 		// Array of all object farmData
-		const Vaults = (await nearPresets.get_farms(1, useFluxusVaultContractState)).map((farm, index: number) => {
+		farmsList.map((farm, index: number) => {
 			farmsObject[farm.farm_id] = farm;
 			return farm;
 		});
 		// Filter for just with pool seed
-		const listSeeds = Object.values(await nearPresets.get_list_seeds_info(1, useFluxusVaultContractState)).filter(
-			(seed, seedIndex: number) => {
-				const poolId = parseInt(seed.seed_id.split('@').splice(1, 1).join(''), 10);
-				if (Number.isNaN(poolId) || poolId < 1) {
-					return 0;
-				}
-				return 1;
-			},
-		);
+		const seedsInfo = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFarmActions()
+			.getListSeedsInfo({ page: 1, limit: 100, useFluxusFarmContract: useFluxusVaultContractState });
+		const listSeeds = Object.values(seedsInfo).filter((seed, seedIndex: number) => {
+			const poolId = parseInt(seed.seed_id.split('@').splice(1, 1).join(''), 10);
+			if (Number.isNaN(poolId) || poolId < 1) {
+				return 0;
+			}
+			return 1;
+		});
 		// Array of IPopulatedSeed data object
 		const populatedSeeds: Array<IPopulatedSeed> = await Promise.all(
 			listSeeds.map(async (seed, index: number) => {
@@ -569,6 +573,17 @@ console.log("${displayFunctionAccessName}_response: ", ${displayFunctionAccessNa
 			});
 		};
 
+		// listFarms
+		pushAction({
+			id: 'listFarms',
+			methodName: 'listFarms',
+			label: 'List Farms',
+			args: { page: 1, perPage: 100, useFluxusFarmContract: false },
+			functionName: 'listFarms',
+			functionToBeExecuted: ($args: any = {}) =>
+				ProviderPattern.getInstance().getProvider().getProviderActions().getFarmActions().listFarms($args),
+		});
+
 		// List Seeds
 		pushAction({
 			id: 'listSeeds',
@@ -716,7 +731,7 @@ console.log("${displayFunctionAccessName}_response: ", ${displayFunctionAccessNa
 		pushAction({
 			id: 'getStakedListByAccountIdFromContract',
 			methodName: 'vaultContractID',
-			label: `Get ${getWallet().getAccountId()} statked list`,
+			label: `Get ${getWallet().getAccountId()} staked list`,
 			functionName: `getStakedListByAccountIdFromContract`,
 			args: {
 				account_id: getWallet().getAccountId(),
@@ -798,8 +813,12 @@ console.log("${displayFunctionAccessName}_response: ", ${displayFunctionAccessNa
 			label: 'Get shares in pool',
 			args: { pool_id: 193, account_id: getProvider().getProviderConfigData().FLUXUS_VAULT_CONTRACT_ID },
 			functionName: 'getSharesInPool',
-			functionToBeExecuted: ProviderPattern.getInstance().getProvider().getProviderActions().getPoolActions()
-				.getSharesInPool,
+			functionToBeExecuted: ($args: any = {}) =>
+				ProviderPattern.getInstance()
+					.getProvider()
+					.getProviderActions()
+					.getPoolActions()
+					.getSharesInPool($args),
 		});
 
 		// getPoolTvlFiatPriceHistory
@@ -853,23 +872,6 @@ console.log("${displayFunctionAccessName}_response: ", ${displayFunctionAccessNa
 		});
 	};
 
-	const farms = useSWRFunction({
-		endpoint: 'listFarmsSWR',
-		functionToExec: listSeeds,
-		argsToExecFunction: { page: 1, perPage: 100, useFluxusFarmContract: false },
-	});
-	const [farmsState, setFarmsState] = useState<Array<any> | Record<any, any>>([] as Array<any>);
-	useEffect(() => {
-		console.log('farms: ', farms);
-		try {
-			if (!(farms.data?.length > 0)) {
-				return;
-			}
-			setFarmsState(farms.data);
-		} catch (e: any) {
-			console.error(e);
-		}
-	}, [farms]);
 	useEffect(() => {
 		setTestActionsState();
 	}, []);
@@ -891,7 +893,6 @@ console.log("${displayFunctionAccessName}_response: ", ${displayFunctionAccessNa
 					backgroundColor: '#100317',
 				}}>
 				<>
-					{JSON.stringify(farmsState)}
 					{/* <ToastNotify theme="DARK" Icon={Money} autoClose={12000} title="Money..." />
 					<ToastNotify theme="LIGHT" Icon={ContactMail} autoClose={12000} title="Sending mail to..." /> */}
 					<H1 title="Laboratório de testes.">Laboratório de testes.</H1>

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import Landing from '@components/Landing';
-import { useNearRPCContext } from '@hooks/index';
 import ProviderPattern from '@ProviderPattern/index';
+import Landing from '@components/Landing';
 import { H1, Card, CardRow, CardHeaderWrapper, BalancesTokenWrapper } from './styles';
 
 const DepositPage: React.FC = function () {
@@ -38,11 +37,10 @@ const CardHeader: React.FC = function () {
 
 // Get Balances Token
 const BalancesToken: React.FC = function () {
-	const nearRPCContext = useNearRPCContext();
 	const [balancesState, setBalancesState] = useState<any>({} as any);
 	useEffect(() => {
 		(async () => {
-			if (nearRPCContext.getWallet().isSignedIn()) {
+			if (ProviderPattern.getProviderInstance().getWallet().isSignedIn()) {
 				const useFluxusFarmContract = true;
 				const leoTokens = [
 					'fluxustest.leopollum.testnet',
@@ -82,7 +80,7 @@ const BalancesToken: React.FC = function () {
 					.getProvider()
 					.getProviderActions()
 					.getTokenActions()
-					.getTokenBalances(undefined, false);
+					.getTokenBalances({});
 				const userRegisteredTokens = await ProviderPattern.getInstance()
 					.getProvider()
 					.getProviderActions()

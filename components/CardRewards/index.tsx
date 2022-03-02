@@ -6,7 +6,6 @@
 import React, { HTMLAttributes, ReactChildren, ReactElement, useEffect, useState } from 'react';
 import ButtonPrimary from '@components/ButtonPrimary';
 import FluxusIcon from '@assets/app/fluxus-icon.svg';
-import { useNearRPCContext } from '@hooks/index';
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { IPopulatedSeed } from '@components/FarmList';
 import ProviderPattern from '@ProviderPattern/index';
@@ -40,8 +39,6 @@ type CardRewardsProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 export const CardRewards: React.FC<CardRewardsProps> = function ({ ...props }) {
-	const nearRPCContext = useNearRPCContext();
-
 	const handleChangeEvent = (
 		ev: React.ChangeEvent<HTMLInputElement>,
 		userFarmRewardToken: IPopulatedReward,
@@ -62,7 +59,7 @@ export const CardRewards: React.FC<CardRewardsProps> = function ({ ...props }) {
 			<CardRewardsTitleContainerStyled>
 				{props?.cardTitle ? (
 					<h1>{props.cardTitle}</h1>
-				) : nearRPCContext.getWallet().isSignedIn() ? (
+				) : ProviderPattern.getProviderInstance().getWallet().isSignedIn() ? (
 					<h1>Your Rewards</h1>
 				) : (
 					<h1
@@ -141,10 +138,13 @@ export const CardRewards: React.FC<CardRewardsProps> = function ({ ...props }) {
 									padding: '12px',
 								}}
 								onClick={() => {
-									if (!nearRPCContext.getWallet().isSignedIn()) {
-										nearRPCContext
+									if (!ProviderPattern.getProviderInstance().getWallet().isSignedIn()) {
+										ProviderPattern.getProviderInstance()
 											.getWallet()
-											.requestSignIn(nearRPCContext.config.FLUXUS_VAULT_CONTRACT_ID);
+											.requestSignIn(
+												ProviderPattern.getProviderInstance().getProviderConfigData()
+													.FLUXUS_VAULT_CONTRACT_ID,
+											);
 									} else {
 										(async () => {
 											if (props?.seedData?.seed_id) {
@@ -163,7 +163,8 @@ export const CardRewards: React.FC<CardRewardsProps> = function ({ ...props }) {
 										})();
 									}
 								}}>
-								{(nearRPCContext.getWallet().isSignedIn() && 'Claim rewards') || 'Connect wallet'}
+								{(ProviderPattern.getProviderInstance().getWallet().isSignedIn() && 'Claim rewards') ||
+									'Connect wallet'}
 							</ButtonPrimary>
 						</>
 					)}

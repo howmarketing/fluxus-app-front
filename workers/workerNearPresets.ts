@@ -5,11 +5,11 @@ import { getNear, getWallet } from '@services/near';
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { BlockReference, CallFunctionRequest } from 'near-api-js/lib/providers/provider';
 import ProviderPattern from '@ProviderPattern/index';
+import { Farm } from '@ProviderPattern/models/Actions/AbstractMainFarmProviderAction';
 
 export const config = ProviderPattern.getInstance().getProvider().getProviderConfigData();
 
-const MAX_PER_PAGE = 100;
-export const getUseAllPools = async () => getTotalPools();
+const DEFAULT_PAGE_LIMIT = 100;
 
 const view = ({
 	methodName,
@@ -76,44 +76,6 @@ export const getContractCode = async (useFluxusFarmContract = false) => {
 	return response;
 };
 
-export const getTotalPools = () => view({ methodName: 'get_number_of_pools' });
-
-export const getPools = (page: number) => {
-	const index = (page - 1) * MAX_PER_PAGE;
-
-	return view({
-		methodName: 'get_pools',
-		args: { from_index: index, limit: MAX_PER_PAGE },
-	});
-};
-
-export type PoolVolumes = {
-	[tokenId: string]: { input: string; output: string };
-};
-
-export interface Pool {
-	shareSupply: string;
-	amounts: string[];
-	amp: number;
-	farming: boolean;
-	id: number;
-	pool_kind: string;
-	shares_total_supply: string;
-	token0_ref_price: string;
-	token_account_ids: string[];
-	token_symbols: string[];
-	total_fee: number;
-	tvl: number;
-}
-export type PoolDetails = Pool & { volumes: PoolVolumes };
-
-export const getPoolDetails = async (id: number, useFluxusFarmContract = false): Promise<PoolDetails> =>
-	view({
-		methodName: 'get_pool',
-		args: { pool_id: id },
-		useFluxusFarmContract,
-	});
-
 export type IRewardsInfo = Record<string, string>;
 /**
  * @description Return all reward tokens from farm contract id
@@ -121,10 +83,10 @@ export type IRewardsInfo = Record<string, string>;
  * @returns {Promise<IRewardsInfo>}
  */
 export const getListRewardsInfo = async (page: number, useFluxusFarmContract = false): Promise<IRewardsInfo> => {
-	const index = (page - 1) * MAX_PER_PAGE;
+	const index = (page - 1) * DEFAULT_PAGE_LIMIT;
 	return farmView({
 		methodName: 'list_rewards_info',
-		args: { from_index: index, limit: MAX_PER_PAGE },
+		args: { from_index: index, limit: DEFAULT_PAGE_LIMIT },
 		useFluxusFarmContract,
 	});
 };
@@ -150,11 +112,11 @@ export type IFarmData = {
 };
 export type IGetFarmsResponse = Array<IFarmData>;
 export const getFarms = async (page: number, useFluxusFarmContract = false): Promise<IGetFarmsResponse> => {
-	const index = (page - 1) * MAX_PER_PAGE;
+	const index = (page - 1) * DEFAULT_PAGE_LIMIT;
 
 	return farmView({
 		methodName: 'list_farms',
-		args: { from_index: index, limit: MAX_PER_PAGE },
+		args: { from_index: index, limit: DEFAULT_PAGE_LIMIT },
 		useFluxusFarmContract,
 	});
 };
@@ -176,30 +138,28 @@ export type ISeedInfo = {
 export const getListSeedsInfo = async (
 	page: number,
 	useFluxusFarmContract = false,
-): Promise<Record<string, ISeedInfo>> => {
-	const index = (page - 1) * MAX_PER_PAGE;
+): Promise<Record<string, ISeedInfo>> =>
+	ProviderPattern.getProviderInstance()
+		.getProviderActions()
+		.getFarmActions()
+		.getListSeedsInfo({ page, limit: 100, useFluxusFarmContract });
 
-	return farmView({
-		methodName: 'list_seeds_info',
-		args: { from_index: index, limit: MAX_PER_PAGE },
-		useFluxusFarmContract,
-	});
-};
+export const getSeedInfo = async (seedID: string, useFluxusFarmContract = false): Promise<ISeedInfo> =>
+	ProviderPattern.getInstance()
+		.getProvider()
+		.getProviderActions()
+		.getFarmActions()
+		.getSeedInfo({ seed_id: seedID, useFluxusFarmContract });
 
-export const getSeedInfo = async (seedID: string): Promise<ISeedInfo> =>
-	farmView({
-		methodName: 'get_seed_info',
-		args: { seed_id: seedID },
-	});
-
-export const getListFarmsBySeed = async (seedID: string): Promise<IFarmData> =>
-	farmView({
-		methodName: 'list_farms_by_seed',
-		args: { seed_id: seedID },
-	});
+export const getListFarmsBySeed = async (seedID: string): Promise<Farm[]> =>
+	ProviderPattern.getInstance().getProvider().getProviderActions().getFarmActions().getFarmsBySeedId(seedID);
 
 export const getUserDeposits = async (accountID = getWallet().getAccountId()): Promise<any> =>
-	ProviderPattern.getInstance().getProvider().getProviderActions().getTokenActions().getTokenBalances();
+	ProviderPattern.getInstance()
+		.getProvider()
+		.getProviderActions()
+		.getTokenActions()
+		.getTokenBalances({ account_id: accountID });
 
 export type IUserListRewards = Record<string, string>;
 export const getUserListRewards = async (
@@ -208,16 +168,13 @@ export const getUserListRewards = async (
 ): Promise<IUserListRewards> => {
 	const useAccountID =
 		accountID || (getWallet().isSignedIn() ? getWallet().getAccountId() : config.REF_FARM_CONTRACT_ID);
-	return farmView({
-		methodName: 'list_rewards',
-		args: {
-			account_id: useAccountID,
-		},
+	return ProviderPattern.getProviderInstance().getProviderActions().getFarmActions().getRewards({
+		accountId: useAccountID,
 		useFluxusFarmContract,
 	});
 };
 export const stakeFarmLPTokens = async ({ token_id = '', amount = '', msg = '', useFluxusFarmContract = false }) =>
-	ProviderPattern.getInstance().getProvider().getProviderActions().getMTokenActions().stake({
+	ProviderPattern.getProviderInstance().getProviderActions().getMTokenActions().stake({
 		token_id,
 		amount,
 		msg,
@@ -248,12 +205,11 @@ export const withdrawUserRewards = async (
 
 export const getListUserSeeds = async ({
 	accountID = getWallet().isSignedIn() ? getWallet().getAccountId() : config.REF_FARM_CONTRACT_ID,
+	useFluxusFarmContract = false,
 }): Promise<IFarmData> =>
-	farmView({
-		methodName: 'list_user_seeds',
-		args: {
-			account_id: accountID,
-		},
+	ProviderPattern.getInstance().getProvider().getProviderActions().getFarmActions().getStakedListByAccountId({
+		accountId: accountID,
+		useFluxusFarmContract,
 	});
 
 export const claimUserRewardsBySeed = async (seed_id: string, useFluxusFarmContract = false): Promise<any> => {

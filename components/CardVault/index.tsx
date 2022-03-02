@@ -16,7 +16,7 @@ import { IDarkModeContext } from '@contexts/darkMode';
 import { useDarkMode, useNearRPCContext } from '@hooks/index';
 import { toNonDivisibleNumber, toReadableNumber } from '@utils/numbers';
 import { ICallbackData, IWalletAsWindow, nearWalletAsWindow } from '@utils/nearWalletAsWindow';
-import { IFarmData as IVaultData } from '@workers/workerNearPresets';
+import { IFarmData as IVaultData } from '@ProviderPattern/models/Actions/AbstractMainFarmProviderAction';
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { IPopulatedReward } from '@components/CardRewards';
 import { IPopulatedSeed } from '@components/VaultList';
@@ -27,7 +27,6 @@ import WhatThisMeanIcon from '@assets/app/what-this-mean-white-icon.svg';
 import PolygonIcon from '@assets/app/polygon.svg';
 import NearIcon from '@assets/app/nearIcon.svg';
 import { INearRPCContext } from '@contexts/nearData/nearRPCData';
-import { getWallet } from '@services/near';
 import ProviderPattern from '@services/ProviderPattern';
 import AbstractMainVaultProviderActions from '@ProviderPattern/models/Actions/AbstractMainVaultProviderActions';
 import AbstractMainProvider from '@ProviderPattern/models/AbstractMainProvider';
@@ -219,7 +218,11 @@ export const CardVaultRewardFooter = ({ ...FooterProps }: ICardVaultRewardFooter
 	};
 
 	const openModalToStakeToVault = async () => {
-		const { balance_details } = await getWallet().account().getBalance();
+		const { balance_details } = await ProviderPattern.getInstance()
+			.getProvider()
+			.getWallet()
+			.account()
+			.getBalance();
 		openModalStake({
 			themeProvided,
 			populatedSeed,
@@ -303,14 +306,19 @@ export const CardVaultRewardFooter = ({ ...FooterProps }: ICardVaultRewardFooter
 				padding: '12px',
 			}}
 			onClick={() => {
-				nearRPCContext.getWallet().requestSignIn(nearRPCContext.config.FLUXUS_VAULT_CONTRACT_ID);
+				ProviderPattern.getInstance()
+					.getProvider()
+					.getWallet()
+					.requestSignIn(
+						ProviderPattern.getProviderInstance().getProviderConfigData().FLUXUS_VAULT_CONTRACT_ID,
+					);
 			}}>
 			Connect wallet
 		</ButtonPrimary>
 	);
 
 	useEffect(() => {
-		setWalletIsSignedState(nearRPCContext.getWallet().isSignedIn());
+		setWalletIsSignedState(ProviderPattern.getInstance().getProvider().getWallet().isSignedIn());
 		return () => {
 			setWalletIsSignedState(false);
 		};
@@ -603,7 +611,11 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 
 	// Open model to stake near with vault contract
 	const openModalToStakeToVault = async () => {
-		const { balance_details } = await getWallet().account().getBalance();
+		const { balance_details } = await ProviderPattern.getInstance()
+			.getProvider()
+			.getWallet()
+			.account()
+			.getBalance();
 		openModalStake({
 			themeProvided,
 			populatedSeed,
@@ -614,7 +626,7 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 
 	// Get balance amount storage into vault contract
 	const getVaultStorageBalanceOf = async (): Promise<{ available: string; total: string }> => {
-		const account_id = getWallet().getAccountId();
+		const account_id = ProviderPattern.getInstance().getProvider().getWallet().getAccountId();
 		return ProviderPattern.getProviderInstance()
 			.getProviderActions()
 			.getVaultActions()
@@ -666,7 +678,9 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 			try {
 				const provider = await getVaultActionsFromProviderAsWindow(1500, false);
 				const vaultActions = provider.actions;
-				vaultActions.withdrawAllUserLiquidityPool<{}>({ account_id: getWallet().getAccountId() });
+				vaultActions.withdrawAllUserLiquidityPool<{}>({
+					account_id: ProviderPattern.getInstance().getProvider().getWallet().getAccountId(),
+				});
 				const walletResponse = await nearWalletAsWindow.getWalletCallback();
 				response.data = walletResponse || {};
 				return response;
@@ -846,19 +860,22 @@ export const DisplayerCardBodyTabBodyForOverView = (props: {
 						opacity: vaultIsEnabled() ? 1 : 0.4,
 					}}
 					onClick={() => {
-						if (getWallet().isSignedIn()) {
+						if (ProviderPattern.getInstance().getProvider().getWallet().isSignedIn()) {
 							openModalToStakeToVault();
 						} else {
 							signInToVaultContract();
 						}
 					}}>
 					{vaultIsEnabled() ? (
-						<>{(getWallet().isSignedIn() && 'Stake') || 'Connect Wallet'} </>
+						<>
+							{(ProviderPattern.getInstance().getProvider().getWallet().isSignedIn() && 'Stake') ||
+								'Connect Wallet'}{' '}
+						</>
 					) : (
 						<>Auto-compound is not enabled for this farm yet.</>
 					)}
 				</ButtonPrimary>
-				{vaultIsEnabled() && getWallet().isSignedIn() && (
+				{vaultIsEnabled() && ProviderPattern.getInstance().getProvider().getWallet().isSignedIn() && (
 					<ButtonPrimary
 						style={{
 							minWidth: '170px',
@@ -912,7 +929,9 @@ export const DisplayerCardBodyRewards = (props: {
 	const [rewardsStateList, setRewardsStateList] = useState<Array<IPopulatedReward>>([] as IPopulatedReward[]);
 
 	const getCardRewardTitle = () => {
-		const title = nearRPCContext.getWallet().isSignedIn() ? `Your Rewards` : `Vault not staked`;
+		const title = ProviderPattern.getInstance().getProvider().getWallet().isSignedIn()
+			? `Your Rewards`
+			: `Vault not staked`;
 		return `${title} | ${getCardTitle(populatedSeed)}`;
 	};
 
@@ -1567,7 +1586,7 @@ const ModalStakeFooter = (props: {
 	};
 
 	const getVaultStorageBalanceOf = async (): Promise<{ available: string; total: string }> => {
-		const account_id = getWallet().getAccountId();
+		const account_id = ProviderPattern.getInstance().getProvider().getWallet().getAccountId();
 		return ProviderPattern.getProviderInstance()
 			.getProviderActions()
 			.getVaultActions()
@@ -1656,7 +1675,7 @@ const ModalStakeFooter = (props: {
 			if (Number(balance.available) < 0.000000000001) {
 				throw new Error(`Vault do not have the available balance yet. Please, try again in a few seconds`);
 			}
-			const args = { account_id: getWallet().getAccountId() };
+			const args = { account_id: ProviderPattern.getInstance().getProvider().getWallet().getAccountId() };
 			try {
 				const { provider, wallet } = await getProviderFromWindowWallet(1500, true);
 				const vaultActions = provider.getProviderActions().getVaultActions();

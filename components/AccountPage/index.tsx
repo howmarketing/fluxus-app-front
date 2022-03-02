@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import Landing from '@components/Landing';
-import { useNearRPCContext } from '@hooks/index';
 import ProviderPattern from '@ProviderPattern/index';
+import Landing from '@components/Landing';
 import { H1 } from './styles';
 
 const AccountPage: React.FC = function () {
@@ -20,16 +19,15 @@ const AccountPage: React.FC = function () {
 };
 
 const BalancesToken: React.FC = function () {
-	const nearRPCContext = useNearRPCContext();
 	const [balancesState, setBalancesState] = useState<any>({} as any);
 	useEffect(() => {
 		(async () => {
-			if (nearRPCContext.getWallet().isSignedIn()) {
+			if (ProviderPattern.getProviderInstance().getWallet().isSignedIn()) {
 				const balances = await ProviderPattern.getInstance()
 					.getProvider()
 					.getProviderActions()
 					.getTokenActions()
-					.getTokenBalances();
+					.getTokenBalances({});
 				// In progress, so, need to keep this with debugging mark
 				console.log(balances);
 				setBalancesState(balances);

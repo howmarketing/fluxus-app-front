@@ -1,19 +1,18 @@
 /* eslint-disable react/no-array-index-key */
 /* eslint-disable @next/next/no-img-element */
-import React, { useEffect, useState, ReactElement } from 'react';
+import React, { useEffect, useState } from 'react';
+import CircularProgress from '@material-ui/core/CircularProgress';
 import Switch from 'react-switch';
-import { useNearRPCContext } from '@hooks/index';
-import { IFarmData, ISeedInfo, PoolDetails } from '@workers/workerNearPresets';
+import { useSWRFunction } from '@hooks/useSWRFunction';
+import { toReadableNumber } from '@utils/numbers';
+import ProviderPattern from '@ProviderPattern/index';
+import { IFarmData, ISeedInfo, PoolDetails } from '@ProviderPattern/models/Actions/AbstractMainFarmProviderAction';
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
+import { IPoolFiatPrice } from '@ProviderPattern/models/Actions/AbstractMainProviderAPI';
 import BoxGhost from '@components/BoxGhost';
 import CardFarm from '@components/CardFarm/index';
 import { ICardFarmState } from '@components/CardFarm';
-import CircularProgress from '@material-ui/core/CircularProgress';
-import { toReadableNumber } from '@utils/numbers';
-import { IPoolFiatPrice } from '@ProviderPattern/models/Actions/AbstractMainProviderAPI';
 import { IPopulatedPoolExtraDataToken, IPopulatedPoolExtraDataVolume } from '@components/VaultList';
-import ProviderPattern from '@ProviderPattern/index';
-import { useSWRFunction } from '@hooks/useSWRFunction';
 import { WrapBox, SwitchArea, SwitchAreaTitle, SwitchAreaTitleTag, ProgressArea } from './styles';
 
 export type IPopulatedPool = PoolDetails & { populated_tokens: Array<TokenMetadata>; shares_lptoken: any };
@@ -28,8 +27,6 @@ export type IPopulatedSeed = ISeedInfo & {
 
 export type IDefaultFarmItemData = ICardFarmState & { id: string | number };
 const FarmList: React.FC = function () {
-	const nearRPCContext = useNearRPCContext();
-	const nearPresets = nearRPCContext.getNearPresets();
 	// Used to keep box height size while rendering the list of farms.
 	const [stateFarmsBoxCssStyleProperties, setStateFarmsBoxCssStyleProperties] = useState<React.CSSProperties>({
 		minHeight: '300px',
@@ -91,21 +88,30 @@ const FarmList: React.FC = function () {
 			.getStakedListByAccountId({ useFluxusFarmContract: useFluxusFarmContractState });
 		// Object with key as farm_id and value as farm data
 		const farmsObject: Record<any, any> = {};
+		const farmsList = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFarmActions()
+			.listFarms({ page: 1, perPage: 100, useFluxusFarmContract: useFluxusFarmContractState });
 		// Array of all object farmData
-		const Farms = (await nearPresets.get_farms(1, useFluxusFarmContractState)).map((farm, index: number) => {
+		farmsList.map((farm, index: number) => {
 			farmsObject[farm.farm_id] = farm;
 			return farm;
 		});
 		// Filter for just with pool seed
-		const listSeeds = Object.values(await nearPresets.get_list_seeds_info(1, useFluxusFarmContractState)).filter(
-			(seed, seedIndex: number) => {
-				const poolId = parseInt(seed.seed_id.split('@').splice(1, 1).join(''), 10);
-				if (Number.isNaN(poolId) || poolId < 1) {
-					return 0;
-				}
-				return 1;
-			},
-		);
+		const seedsInfo = await ProviderPattern.getInstance()
+			.getProvider()
+			.getProviderActions()
+			.getFarmActions()
+			.getListSeedsInfo({ page: 1, limit: 100, useFluxusFarmContract: useFluxusFarmContractState });
+
+		const listSeeds = Object.values(seedsInfo).filter((seed, seedIndex: number) => {
+			const poolId = parseInt(seed.seed_id.split('@').splice(1, 1).join(''), 10);
+			if (Number.isNaN(poolId) || poolId < 1) {
+				return 0;
+			}
+			return 1;
+		});
 		// Array of IPopulatedSeed data object
 		const populatedSeeds: Array<IPopulatedSeed> = await Promise.all(
 			listSeeds.map(async (seed, index: number) => {
@@ -224,7 +230,9 @@ const FarmList: React.FC = function () {
 				const gasBurnt = transaction_outcome?.outcome?.gas_burnt || 0;
 				const gasBurntReadAble = toReadableNumber(24, `${gasBurnt}`);
 				const explorerId = transaction_outcome?.id;
-				const explorerLink = `${nearRPCContext.config.explorerUrl}/transactions/${explorerId}`;
+				const explorerLink = `${
+					ProviderPattern.getInstance().getProvider().getProviderConfigData().explorerUrl
+				}/transactions/${explorerId}`;
 				return { methodName, executorId, gasBurnt, gasBurntReadAble, explorerId, explorerLink };
 			}),
 		);

@@ -1,5 +1,4 @@
-/* eslint-disable no-alert */
-/* eslint-disable jsx-a11y/no-static-element-interactions */
+/* eslint-disable jsx-a11y/interactive-supports-focus */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 /* eslint-disable arrow-body-style */
 /* eslint-disable react/destructuring-assignment */
@@ -8,22 +7,24 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import React, { ReactChild, ReactElement, useEffect, useState, HTMLAttributes, ChangeEvent } from 'react';
 import Img from 'next/image';
-import uxusIcon from '@assets/app/uxus.svg';
-import WhatThisMeanIcon from '@assets/app/what-this-mean-icon.svg';
-import PolygonIcon from '@assets/app/polygon.svg';
-import CardRewards, { IPopulatedReward } from '@components/CardRewards';
-import { useDarkMode, useNearRPCContext } from '@hooks/index';
-import { IPopulatedSeed } from '@components/FarmList';
-import { IFarmData } from '@workers/workerNearPresets';
-import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
-import ButtonPrimary from '@components/ButtonPrimary';
-import ButtonGhost from '@components/ButtonGhost';
+import { INearRPCContext } from '@contexts/nearData/nearRPCData';
+import { IDarkModeContext } from '@contexts/darkMode';
+import { useDarkMode } from '@hooks/index';
 import { getMftTokenId } from '@utils/token';
 import { toNonDivisibleNumber, toReadableNumber } from '@utils/numbers';
-import { IDarkModeContext } from '@contexts/darkMode';
 import { nearWalletAsWindow } from '@utils/nearWalletAsWindow';
-import { INearRPCContext } from '@contexts/nearData/nearRPCData';
 import ProviderPattern from '@ProviderPattern/index';
+import { IFarmData } from '@ProviderPattern/models/Actions/AbstractMainFarmProviderAction';
+import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
+import { IPopulatedSeed } from '@components/FarmList';
+import CardRewards, { IPopulatedReward } from '@components/CardRewards';
+import ButtonPrimary from '@components/ButtonPrimary';
+import ButtonGhost from '@components/ButtonGhost';
+import WhatThisMeanIcon from '@assets/app/what-this-mean-icon.svg';
+import PolygonIcon from '@assets/app/polygon.svg';
+import uxusIcon from '@assets/app/uxus.svg';
+import ToastNotify from '@components/ToastNotify';
+import { ErrorOutline as ErrorIcon } from '@material-ui/icons';
 import {
 	CardFarmAreaStyled,
 	CardContainerStyled,
@@ -139,7 +140,6 @@ export type ICardFarmRewardFooter = {
 
 export const CardFarmRewardFooter = ({ ...FooterProps }: ICardFarmRewardFooter) => {
 	const themeProvided = useDarkMode();
-	const nearRPCContext = useNearRPCContext();
 	const { populatedSeed, useFluxusFarmContract, loadCardRewards, setStateRewardsIsLoading } = FooterProps;
 	const total_staked = typeof populatedSeed.user_staked_amount !== `undefined` ? populatedSeed.user_staked_amount : 0;
 	const total_lptoken =
@@ -163,7 +163,7 @@ export const CardFarmRewardFooter = ({ ...FooterProps }: ICardFarmRewardFooter) 
 				});
 			const walletResponse = await nearWalletAsWindow.getWalletCallback(30000);
 			if (!walletResponse.success) {
-				window.alert(walletResponse.message);
+				ToastNotify({ title: walletResponse.message, Icon: ErrorIcon });
 			}
 			if (typeof loadCardRewards === 'function') {
 				await loadCardRewards(true);
@@ -172,7 +172,7 @@ export const CardFarmRewardFooter = ({ ...FooterProps }: ICardFarmRewardFooter) 
 				setStateRewardsIsLoading(false);
 			}
 		} catch (e: any) {
-			window.alert(e?.message || '');
+			ToastNotify({ title: e?.message || 'Error', Icon: ErrorIcon });
 		}
 	};
 
@@ -296,14 +296,18 @@ export const CardFarmRewardFooter = ({ ...FooterProps }: ICardFarmRewardFooter) 
 				minWidth: '100%',
 			}}
 			onClick={() => {
-				nearRPCContext.getWallet().requestSignIn(nearRPCContext.config.FLUXUS_VAULT_CONTRACT_ID);
+				ProviderPattern.getProviderInstance()
+					.getWallet()
+					.requestSignIn(
+						ProviderPattern.getProviderInstance().getProviderConfigData().FLUXUS_VAULT_CONTRACT_ID,
+					);
 			}}>
 			Connect wallet
 		</ButtonPrimary>
 	);
 
 	useEffect(() => {
-		setWalletIsSignedState(nearRPCContext.getWallet().isSignedIn());
+		setWalletIsSignedState(ProviderPattern.getProviderInstance().getWallet().isSignedIn());
 		return () => {
 			setWalletIsSignedState(false);
 		};
@@ -646,13 +650,14 @@ export const DisplayerCardBodyRewards = (props: {
 	populatedSeed: IPopulatedSeed;
 	useFluxusFarmContractState: boolean;
 }) => {
-	const nearRPCContext = useNearRPCContext();
 	const { populatedSeed, useFluxusFarmContractState } = props;
 	const [stateRewardsIsLoading, setStateRewardsIsLoading] = useState<boolean>(true);
 	const [rewardsStateList, setRewardsStateList] = useState<Array<IPopulatedReward>>([] as IPopulatedReward[]);
 
 	const getCardRewardTitle = () => {
-		const title = nearRPCContext.getWallet().isSignedIn() ? `Your Rewards` : `Farm not staked`;
+		const title = ProviderPattern.getProviderInstance().getWallet().isSignedIn()
+			? `Your Rewards`
+			: `Farm not staked`;
 		return `${title} | ${getCardTitle(populatedSeed)}`;
 	};
 
@@ -918,6 +923,7 @@ const ModalUnstakeContent = (props: {
 						position: 'absolute',
 						right: '1px',
 					}}
+					role="textbox"
 					onClick={(ev: any) => {
 						setUnstakeInputValue(toReadableNumber(24, `${totalStaked}`));
 					}}>
@@ -1133,6 +1139,7 @@ const ModalStakeContent = (props: {
 						position: 'absolute',
 						right: '1px',
 					}}
+					role="textbox"
 					onClick={(ev: any) => {
 						setStakeInputValue(toReadableNumber(24, `${totalAvailableToStake}`));
 					}}>
@@ -1160,16 +1167,17 @@ const ModalStakeFooter = (props: {
 			amount,
 			useFluxusFarmContract,
 		};
-		await windowWalletProvider
-			.getNearPresets()
-			.stake_farm_lp_Tokens(stakeValues)
+		await ProviderPattern.getProviderInstance()
+			.getProviderActions()
+			.getMTokenActions()
+			.stake(stakeValues)
 			.catch((error: any) => {
 				// Error log
 				console.log('Stake error: ', error);
 			});
 		const walletResponse = await nearWalletAsWindow.getWalletCallback();
 		if (!walletResponse.success) {
-			window.alert(walletResponse.message);
+			ToastNotify({ title: walletResponse.message, Icon: ErrorIcon });
 		}
 		return stakeValues;
 	};

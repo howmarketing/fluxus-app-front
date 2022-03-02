@@ -53,7 +53,7 @@ export interface IPoolFiatPrice {
 }
 
 export default class AbstractMainProviderAPI extends AbstractGenericActions {
-	protected declare devImplementation: any;
+	public declare devImplementation: any;
 
 	protected static _classInstanceSingleton: AbstractMainProviderAPI;
 
@@ -178,7 +178,9 @@ export default class AbstractMainProviderAPI extends AbstractGenericActions {
 	}
 
 	public async getPoolTvlFiatPriceHistory({ pool_id = 0 }): Promise<Array<IPoolHistoryFiatPrice>> {
-		this.devImplementation = true;
+		if (typeof this?.devImplementation !== 'undefined') {
+			this.devImplementation = true;
+		}
 		const enpointUrl = `https://sodaki.com/api/pool/${pool_id}/tvl`;
 		const fetchResponse = await fetch(enpointUrl, {
 			headers: {

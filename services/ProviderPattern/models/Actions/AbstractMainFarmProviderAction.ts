@@ -13,6 +13,62 @@ import { storageDepositAction, STORAGE_TO_REGISTER_WITH_MFT } from '../../../../
 
 export const DEFAULT_PAGE_LIMIT = 100;
 
+export type PoolVolumes = {
+	[tokenId: string]: { input: string; output: string };
+};
+
+export interface Pool {
+	shareSupply: string;
+	amounts: string[];
+	amp: number;
+	farming: boolean;
+	id: number;
+	pool_kind: string;
+	shares_total_supply: string;
+	token0_ref_price: string;
+	token_account_ids: string[];
+	token_symbols: string[];
+	total_fee: number;
+	tvl: number;
+}
+export type PoolDetails = Pool & { volumes: PoolVolumes };
+
+export type IRewardsInfo = Record<string, string>;
+
+export type IFarmData = {
+	farm_id: string;
+	farm_kind: string;
+	farm_status: string;
+	seed_id: string;
+	reward_token: string;
+	token_details: TokenMetadata;
+	user_reward: any;
+	user_unclaimed_reward: any;
+	start_at: number;
+	reward_per_session: number;
+	session_interval: number;
+	total_reward: number;
+	cur_round: number;
+	last_round: number;
+	claimed_reward: number;
+	unclaimed_reward: number;
+	beneficiary_reward: number | string | undefined;
+};
+
+export type IGetFarmsResponse = Array<IFarmData>;
+
+export type ISeedInfo = {
+	seed_id: string;
+	seed_type: string;
+	farms: string[];
+	next_index: number;
+	amount: string;
+	min_deposit: string;
+};
+
+export type IUserListRewards = Record<string, string>;
+/* - */
+
 export interface Seed {
 	seed_id: string;
 	amount: number;
@@ -58,6 +114,8 @@ export default class AbstractMainFarmProviderAction extends AbstractGenericActio
 	protected static _classInstanceSingleton: AbstractMainFarmProviderAction;
 
 	protected declare _providerActionsInstace: AbstractMainProviderActions;
+
+	public defaultPageLimit: number = 100;
 
 	/**
 	 * GET THE SINGLETON INSTANCE OF THIS CLASS
@@ -119,23 +177,15 @@ export default class AbstractMainFarmProviderAction extends AbstractGenericActio
 		return seedDatas;
 	}
 
-	public async listFarmsSWR({ page = 1, perPage = DEFAULT_PAGE_LIMIT, useFluxusFarmContract = false }) {
-		return useSWRFunction({
-			endpoint: 'listFarmsSWR',
-			functionToExec: this.listFarms,
-			argsToExecFunction: { page, perPage, useFluxusFarmContract },
-		});
-	}
-
 	public async listFarms({
 		page = 1,
-		perPage = DEFAULT_PAGE_LIMIT,
+		perPage = this.defaultPageLimit,
 		useFluxusFarmContract = false,
 	}: {
 		page?: number;
 		perPage?: number;
 		useFluxusFarmContract?: boolean;
-	}): Promise<Record<string, string>> {
+	}): Promise<Array<Farm>> {
 		this.devImplementation = true;
 		const index = (page - 1) * perPage;
 		const seedDatas = await refFarmViewFunction({
@@ -147,13 +197,38 @@ export default class AbstractMainFarmProviderAction extends AbstractGenericActio
 		return seedDatas;
 	}
 
+	/**
+	 *
+	 */
+	public async getListSeedsInfo({
+		page = 1,
+		limit = this.defaultPageLimit,
+		useFluxusFarmContract = false,
+	}): Promise<Record<string, ISeedInfo>> {
+		const index = (page - 1) * limit;
+		return refFarmViewFunction({
+			methodName: 'list_seeds_info',
+			args: { from_index: index, limit },
+			useFluxusFarmContract,
+		});
+	}
+
+	public async getSeedInfo({ seed_id = '', useFluxusFarmContract = false }): Promise<ISeedInfo> {
+		this.devImplementation = true;
+		return refFarmViewFunction({
+			methodName: 'get_seed_info',
+			args: { seed_id },
+			useFluxusFarmContract,
+		});
+	}
+
 	public async getStakedListByAccountId({
 		accountId = this.getWallet().getAccountId(),
 		useFluxusFarmContract = false,
-	}): Promise<Record<string, string>> {
+	}): Promise<IFarmData> {
 		this.devImplementation = true;
 		if (!accountId) {
-			return {} as Record<string, string>;
+			return {} as IFarmData;
 		}
 		const params = {
 			methodName: 'list_user_seeds',
@@ -341,7 +416,7 @@ export default class AbstractMainFarmProviderAction extends AbstractGenericActio
 		return farms.filter(farm => Number(farm.current_user_reward) > 0);
 	}
 
-	public async getFarmsBySeedId(seed_id: number): Promise<Farm[]> {
+	public async getFarmsBySeedId(seed_id: number | string): Promise<Farm[]> {
 		this.devImplementation = true;
 		const farms: Farm[] = await refFarmViewFunction({
 			methodName: 'list_farms_by_seed',
@@ -362,7 +437,7 @@ export default class AbstractMainFarmProviderAction extends AbstractGenericActio
 	public async getRewards({
 		accountId = this.getWallet().getAccountId(),
 		useFluxusFarmContract = false,
-	}): Promise<any> {
+	}): Promise<IUserListRewards> {
 		this.devImplementation = true;
 		return refFarmViewFunction({
 			methodName: 'list_rewards',

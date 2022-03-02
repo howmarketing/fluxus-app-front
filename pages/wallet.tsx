@@ -37,8 +37,8 @@ const wallet: NextPage = function () {
 					console.log(w.execFunctionProps);
 					clearInterval(waitingForOpnerFunction);
 					const fArgs = Object.values(w.execFunctionProps.args);
-					// nearRPCContext.getWallet().isSignedIn();
-					// nearRPCContext.getWallet().requestSignIn();
+					// ProviderPattern.getProviderInstance().getWallet().isSignedIn();
+					// ProviderPattern.getProviderInstance().getWallet().requestSignIn();
 					// withdrawAllReward(fArgs[0], fArgs[1], fArgs[2]);
 					// w.execFunctionProps.function(fArgs[0], fArgs[1], fArgs[2]);
 				} else {

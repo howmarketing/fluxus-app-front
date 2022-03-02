@@ -152,14 +152,15 @@ export const Header: React.FC<IHeader> = ({ ...props }) => {
 				<HeaderActionsArea>
 					<ButtonGhost
 						onClick={() => {
-							if (!nearRPCContext.getWallet().isSignedIn()) {
+							if (!ProviderPattern.getProviderInstance().getWallet().isSignedIn()) {
 								requestWalletConnection();
 							} else {
 								requestWalletSignOutConnection();
 							}
 						}}
 						style={{ fontSize: '16px', padding: '0 26px' }}>
-						{(nearRPCContext.getWallet().isSignedIn() && nearRPCContext.getWallet().getAccountId()) ||
+						{(ProviderPattern.getProviderInstance().getWallet().isSignedIn() &&
+							ProviderPattern.getProviderInstance().getWallet().getAccountId()) ||
 							`Connect Wallet`}
 					</ButtonGhost>
 					<SwitchThemeButton />
