@@ -1,7 +1,7 @@
 /* eslint-disable no-async-promise-executor */
 /* eslint-disable camelcase */
 /* eslint-disable no-await-in-loop */
-import { getNear, getWallet } from '@services/near';
+import { getNear, getWallet } from '@ProviderPattern/services/near';
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { BlockReference, CallFunctionRequest } from 'near-api-js/lib/providers/provider';
 import ProviderPattern from '@ProviderPattern/index';

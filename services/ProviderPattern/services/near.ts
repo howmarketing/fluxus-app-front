@@ -1,9 +1,9 @@
 /* eslint-disable prefer-destructuring */
 import { Near, keyStores, utils } from 'near-api-js';
-import { functionCall } from 'near-api-js/lib/transaction';
 import BN from 'bn.js';
+import { functionCall } from 'near-api-js/lib/transaction';
 import AbstractMainWallet from '@ProviderPattern/models/AbstractMainWallet';
-import ProviderPattern from './ProviderPattern';
+import ProviderPattern from '@ProviderPattern/index';
 
 const config = ProviderPattern.getInstance().getProvider().getProviderConfigData();
 

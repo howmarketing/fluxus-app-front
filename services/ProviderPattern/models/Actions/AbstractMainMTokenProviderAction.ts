@@ -2,7 +2,7 @@ import BN from 'bn.js';
 import * as math from 'mathjs';
 import { utils } from 'near-api-js';
 import { toNonDivisibleNumber } from '@utils/numbers';
-import { ONE_YOCTO_NEAR, Transaction, executeFarmMultipleTransactions } from '@services/near';
+import { ONE_YOCTO_NEAR, Transaction, executeFarmMultipleTransactions } from '@ProviderPattern/services/near';
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { ACCOUNT_MIN_STORAGE_AMOUNT } from '@ProviderPattern/models/Actions/AbstractMainAccountProviderAction';
 import {
@@ -11,7 +11,7 @@ import {
 	STORAGE_PER_TOKEN,
 	STORAGE_TO_REGISTER_WITH_MFT,
 	MIN_DEPOSIT_PER_TOKEN_FARM,
-} from '@services/creators/storage';
+} from '@creators/storage';
 import ProviderPattern from '@ProviderPattern/index';
 import AbstractGenericActions from '@ProviderPattern/models/Actions/AbstractGenericActions';
 import AbstractMainProviderActions from '@ProviderPattern/models/Actions/AbstractMainProviderActions';

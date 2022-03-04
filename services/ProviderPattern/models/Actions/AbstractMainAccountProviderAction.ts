@@ -1,7 +1,7 @@
 import AbstractMainProviderActions from '@ProviderPattern/models/Actions/AbstractMainProviderActions';
 import AbstractGenericActions from '@ProviderPattern/models/Actions/AbstractGenericActions';
 
-import { refFarmViewFunction, refFiViewFunction } from '@services/near';
+import { refFarmViewFunction, refFiViewFunction } from '@ProviderPattern/services/near';
 
 export const ACCOUNT_MIN_STORAGE_AMOUNT = '0.003';
 

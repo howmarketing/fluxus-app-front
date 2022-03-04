@@ -10,7 +10,7 @@ import {
 	RefFiFunctionCallOptions,
 	refFiManyFunctionCalls,
 	Transaction,
-} from '@services/near';
+} from '@ProviderPattern/services/near';
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { Pool } from '@ProviderPattern/models/Actions/AbstractMainPoolProviderAction';
 import { storageDepositAction, STORAGE_TO_REGISTER_WITH_MFT } from '@creators/storage';

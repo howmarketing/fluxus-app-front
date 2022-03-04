@@ -1,6 +1,6 @@
 import React, { createContext, useMemo } from 'react';
 import type { NextPage } from 'next';
-import { getNear, getWallet } from '@services/near';
+import { getNear, getWallet } from '@ProviderPattern/services/near';
 import {
 	config,
 	// getTotalPools,

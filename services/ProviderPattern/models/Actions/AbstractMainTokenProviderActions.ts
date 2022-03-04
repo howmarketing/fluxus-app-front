@@ -8,7 +8,7 @@ import {
 	Transaction,
 	REF_FI_CONTRACT_ID,
 	executeMultipleTransactions,
-} from '@services/near';
+} from '@ProviderPattern/services/near';
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { ACCOUNT_MIN_STORAGE_AMOUNT } from '@ProviderPattern/models/Actions/AbstractMainAccountProviderAction';
 import { toNonDivisibleNumber } from '@utils/numbers';
@@ -20,8 +20,8 @@ import {
 	needDepositStorage,
 	STORAGE_PER_TOKEN,
 	ONE_MORE_DEPOSIT_AMOUNT,
-} from '@services/creators/storage';
-import { registerTokenAction } from '@services/creators/token';
+} from '@creators/storage';
+import { registerTokenAction } from '@creators/token';
 import ProviderPattern from '@ProviderPattern/index';
 import AbstractMainProviderActions from './AbstractMainProviderActions';
 import AbstractGenericActions from './AbstractGenericActions';

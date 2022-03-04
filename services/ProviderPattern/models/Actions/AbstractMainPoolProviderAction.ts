@@ -14,9 +14,9 @@ import {
 	Transaction,
 	RefFiFunctionCallOptions,
 	refFiManyFunctionCalls,
-} from '../../../near';
-import { toNonDivisibleNumber } from '../../../../utils/numbers';
-import { storageDepositAction, storageDepositForFTAction } from '../../../creators/storage';
+} from '@ProviderPattern/services/near';
+import { toNonDivisibleNumber } from '@utils/numbers';
+import { storageDepositAction, storageDepositForFTAction } from '@creators/storage';
 
 export const DEFAULT_PAGE_LIMIT = 100;
 

@@ -1,6 +1,11 @@
 import { createGlobalStyle } from 'styled-components';
 
 export const GlobalStyle = createGlobalStyle`
+
+		html {
+			background-color: #100317;
+		}
+
 		::-webkit-scrollbar{
 			width:6px;
 			background-color:transparent;
@@ -22,7 +27,7 @@ export const GlobalStyle = createGlobalStyle`
 		flex-wrap: wrap;
 		overflow-wrap: break-word;
 		min-height: 100vh;
-        background-color: ${({ theme }) => theme.colors.background_primary};
+        background-color: #100317;
         color: ${({ theme }) => theme.colors.text};
         -webkit-font-smoothing: antialiased;
 		overflow-x:clip;

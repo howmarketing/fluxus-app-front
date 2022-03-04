@@ -46,7 +46,7 @@
 				"./services/*"
 			],
 			"@creators/*": [
-				"./services/creators/*"
+				"./services/ProviderPattern/services/creators/*"
 			],
 			"@state/*": [
 				"./state/*"

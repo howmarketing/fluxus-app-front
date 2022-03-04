@@ -31,12 +31,12 @@ const FarmList: React.FC = function () {
 	const [stateFarmsBoxCssStyleProperties, setStateFarmsBoxCssStyleProperties] = useState<React.CSSProperties>({
 		minHeight: '300px',
 	} as React.CSSProperties);
-	// Set if it will use the fluxus farm contract (Setted from UI Switch Button).
+	// Set if it will use the Fluxus farm contract (defined from UI Switch Button).
 	const [useFluxusFarmContractState, setUseFluxusFarmContractState] = useState<boolean>(false);
 	// List of seeds to show farms at farm box component
 	const [FarmsState, setFarmsState] = useState<Array<IPopulatedSeed>>([] as Array<IPopulatedSeed>);
 
-	const [transactionHashes, setTransactionHashs] = useState<Array<string>>(['']);
+	const [transactionHashes, setTransactionHashes] = useState<Array<string>>(['']);
 
 	// Used to fixed box height while load and list seeds
 	const setFarmBoxMinHeightWithCurrentHeight = async () => {
@@ -60,7 +60,7 @@ const FarmList: React.FC = function () {
 			return false;
 		}
 	};
-	// Reset the farm boz min height to be the auto height with yout content height
+	// Reset the farm boz min height to be the auto height with your content height
 	const resetFarmBoxMinHeight = () => {
 		try {
 			const farmBoxElement = document.querySelectorAll<HTMLDivElement>(
@@ -86,6 +86,7 @@ const FarmList: React.FC = function () {
 			.getProviderActions()
 			.getFarmActions()
 			.getStakedListByAccountId({ useFluxusFarmContract: useFluxusFarmContractState });
+
 		// Object with key as farm_id and value as farm data
 		const farmsObject: Record<any, any> = {};
 		const farmsList = await ProviderPattern.getInstance()
@@ -208,11 +209,11 @@ const FarmList: React.FC = function () {
 		}, 200);
 	};
 
-	const getTrasactionHashs = () => new URLSearchParams(window.location.search).get('transactionHashes')?.split(',');
+	const getTransactionHashes = () => new URLSearchParams(window.location.search).get('transactionHashes')?.split(',');
 
 	// Implementation in progress
 	const checkTransactions = async () => {
-		const transactions = getTrasactionHashs() || [];
+		const transactions = getTransactionHashes() || [];
 		const transactionsResponse = await Promise.all(
 			transactions.map(async (txHash: string) => {
 				const { transaction, transaction_outcome } = await ProviderPattern.getInstance()
@@ -249,7 +250,7 @@ const FarmList: React.FC = function () {
 		})();
 		return () => {
 			// setFarmsState([]);
-			setTransactionHashs([]);
+			setTransactionHashes([]);
 		};
 	}, [useFluxusFarmContractState]);
 

@@ -7,9 +7,13 @@ import { PoolRPCView } from '@ProviderPattern/models/Actions/AbstractMainProvide
 import AbstractMainProviderActions from '@ProviderPattern/models/Actions/AbstractMainProviderActions';
 import AbstractGenericActions from '@ProviderPattern/models/Actions/AbstractGenericActions';
 import ProviderPattern from '@ProviderPattern/index';
-import { useSWRFunction } from '@hooks/useSWRFunction';
-import { refFarmFunctionCall, refFarmViewFunction, Transaction, executeFarmMultipleTransactions } from '../../../near';
-import { storageDepositAction, STORAGE_TO_REGISTER_WITH_MFT } from '../../../../services/creators/storage';
+import { storageDepositAction, STORAGE_TO_REGISTER_WITH_MFT } from '@creators/storage';
+import {
+	refFarmFunctionCall,
+	refFarmViewFunction,
+	Transaction,
+	executeFarmMultipleTransactions,
+} from '@ProviderPattern/services/near';
 
 export const DEFAULT_PAGE_LIMIT = 100;
 

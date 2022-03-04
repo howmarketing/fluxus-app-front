@@ -10,7 +10,7 @@ import LogoImage from '@components/LogoImage';
 
 import { useNearRPCContext } from '@hooks/index';
 import { nearWalletAsWindow } from '@utils/nearWalletAsWindow';
-import { REF_FARM_CONTRACT_ID } from '@services/near';
+import { REF_FARM_CONTRACT_ID } from '@ProviderPattern/services/near';
 import { INearRPCContext } from '@contexts/nearData/nearRPCData';
 import ProviderPattern from '@ProviderPattern/index';
 import { resolve } from 'path';

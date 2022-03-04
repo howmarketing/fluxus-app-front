@@ -12,7 +12,7 @@ import MainProvider from '@ProviderPattern/models/MainProvider';
 import { toNonDivisibleNumber } from '@utils/numbers';
 import { ICallbackData, nearWalletAsWindow } from '@utils/nearWalletAsWindow';
 import { makeWait } from '@utils/returns';
-import { getWallet } from '@services/near';
+import { getWallet } from '@ProviderPattern/services/near';
 import ProviderPattern from '@services/ProviderPattern';
 import Landing from '@components/Landing';
 import { H1 } from '@components/HomePage/styles';
@@ -440,7 +440,8 @@ const Laboratorio: NextPage = function () {
 			contract_id: contract_id || providerConfig.REF_FI_CONTRACT_ID || '',
 			debug,
 		};
-		console.log('getRefFarmUsersDeposits: ', args);
+		console.log('getRefFarmUsersDeposits: ');
+		console.table(args);
 		return ProviderPattern.getInstance()
 			.getProvider()
 			.getProviderActions()
@@ -554,7 +555,11 @@ console.log("${displayFunctionAccessName}_response: ", ${displayFunctionAccessNa
 						data: {},
 					};
 				}
-				console.log('Function Executed Response: ', functionExecutedResponse);
+				console.log('Function Executed Response: ', {
+					success: functionExecutedResponse.success,
+					msg: functionExecutedResponse.msg,
+				});
+				console.table(functionExecutedResponse.data);
 				return functionExecutedResponse;
 			};
 			const pushData = {
@@ -877,7 +882,7 @@ console.log("${displayFunctionAccessName}_response: ", ${displayFunctionAccessNa
 	}, []);
 
 	useEffect(() => {
-		console.log('actionsState: ', actionsState);
+		console.table({ ...actionsState });
 	}, [actionsState]);
 
 	return (

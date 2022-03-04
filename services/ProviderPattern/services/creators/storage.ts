@@ -5,7 +5,7 @@ import {
 	REF_FARM_CONTRACT_ID,
 	getWallet,
 	refFiViewFunction,
-} from '../near';
+} from '@ProviderPattern/services/near';
 
 export const STORAGE_PER_TOKEN = '0.003';
 export const STORAGE_TO_REGISTER_WITH_FT = '0.1';

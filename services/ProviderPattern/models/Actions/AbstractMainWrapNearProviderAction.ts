@@ -5,7 +5,7 @@ import AbstractMainProviderActions from '@ProviderPattern/models/Actions/Abstrac
 import AbstractGenericActions from '@ProviderPattern/models/Actions/AbstractGenericActions';
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import ProviderPattern from '@ProviderPattern/index';
-import { withdrawAction } from '../../../creators/token';
+import { withdrawAction } from '@creators/token';
 import {
 	executeMultipleTransactions,
 	ONE_YOCTO_NEAR,
@@ -13,8 +13,8 @@ import {
 	REF_FI_CONTRACT_ID,
 	Transaction,
 	getWallet,
-} from '../../../near';
-import { storageDepositAction } from '../../../creators/storage';
+} from '@ProviderPattern/services/near';
+import { storageDepositAction } from '../../services/creators/storage';
 
 export const NEW_ACCOUNT_STORAGE_COST = '0.00125';
 

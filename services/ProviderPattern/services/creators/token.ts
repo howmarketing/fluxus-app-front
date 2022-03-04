@@ -1,4 +1,4 @@
-import { ONE_YOCTO_NEAR } from '../near';
+import { ONE_YOCTO_NEAR } from '@ProviderPattern/services/near';
 
 interface WithdrawActionOptions {
 	tokenId: string;

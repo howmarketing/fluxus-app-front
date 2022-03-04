@@ -1,8 +1,14 @@
 import metadataDefaults from '@utils/metadata';
 import AbstractMainProviderActions from '@ProviderPattern/models/Actions/AbstractMainProviderActions';
 import AbstractGenericActions from '@ProviderPattern/models/Actions/AbstractGenericActions';
-import { storageDepositForFTAction } from '../../../creators/storage';
-import { RefFiFunctionCallOptions, getWallet, getGas, getAmount, RefFiViewFunctionOptions } from '../../../near';
+import { storageDepositForFTAction } from '@creators/storage';
+import {
+	RefFiFunctionCallOptions,
+	getWallet,
+	getGas,
+	getAmount,
+	RefFiViewFunctionOptions,
+} from '@ProviderPattern/services/near';
 
 export const NEAR_ICON = 'https://near.org/wp-content/themes/near-19/assets/img/brand-icon.png';
 const BANANA_ID = 'banana.ft-fin.testnet'; // 'berryclub.ek.near';
