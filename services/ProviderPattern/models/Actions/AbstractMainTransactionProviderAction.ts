@@ -3,6 +3,7 @@ import AbstractGenericActions from '@ProviderPattern/models/Actions/AbstractGene
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
 import { toReadableNumber } from '@utils/numbers';
 import ProviderPattern from '@ProviderPattern/index';
+import { IAny } from '@ProviderPattern/Interfaces_test';
 
 export default class AbstractMainTransactionProviderAction extends AbstractGenericActions {
 	protected declare devImplementation: any;
@@ -112,7 +113,17 @@ export default class AbstractMainTransactionProviderAction extends AbstractGener
 		}
 	}
 
-	public async parseSwap(params: any) {
+	public async parseSwap(params: {
+		actions: Array<{
+			pool_id: string | number;
+			token_in: string;
+			token_out: string;
+			min_amount_in: string;
+			min_amount_out: string;
+			amount_in: string;
+			amount_out: string;
+		}>;
+	}) {
 		this.devImplementation = true;
 		const in_token = await ProviderPattern.getInstance()
 			.getProvider()
@@ -135,7 +146,7 @@ export default class AbstractMainTransactionProviderAction extends AbstractGener
 		};
 	}
 
-	public async parseWithdraw(params: any) {
+	public async parseWithdraw(params: { token_id: string; amount: string }) {
 		this.devImplementation = true;
 		const token = await ProviderPattern.getInstance()
 			.getProvider()

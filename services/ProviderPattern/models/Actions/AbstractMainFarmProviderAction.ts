@@ -177,7 +177,6 @@ export default class AbstractMainFarmProviderAction extends AbstractGenericActio
 			args: { from_index: index, limit: perPage },
 			useFluxusFarmContract,
 		});
-
 		return seedDatas;
 	}
 
@@ -279,7 +278,7 @@ export default class AbstractMainFarmProviderAction extends AbstractGenericActio
 			.getIndexerActions()
 			.getPoolsByIds({ pool_ids });
 		if (pools) {
-			poolList = pools.reduce((obj: any, pool: any) => ({ ...obj, [pool.id]: pool }), {});
+			poolList = pools.reduce((obj: any, pool: PoolRPCView) => ({ ...obj, [pool.id]: pool }), {});
 		}
 
 		const tasks = farms.map(async f => {

@@ -280,6 +280,7 @@ const VaultList: React.FC = function () {
 						shares_tvl: vaultUserSharesTvl,
 					};
 				};
+
 				await defineVaultUserSharesInfo();
 
 				return populateSeed;

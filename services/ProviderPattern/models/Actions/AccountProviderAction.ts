@@ -9,10 +9,10 @@ export interface AccountStorageView {
 	total: string;
 	available: string;
 }
-export default class AbstractMainAccountProviderAction extends AbstractGenericActions {
+export default class AccountProviderAction extends AbstractGenericActions {
 	protected declare devImplementation: any;
 
-	protected static _classInstanceSingleton: AbstractMainAccountProviderAction;
+	protected static _classInstanceSingleton: AccountProviderAction;
 
 	protected declare _providerActionsInstace: AbstractMainProviderActions;
 

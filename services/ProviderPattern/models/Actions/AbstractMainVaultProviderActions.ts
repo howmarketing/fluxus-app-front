@@ -7,6 +7,35 @@ import AbstractGenericActions, {
 	IFunctionCall,
 	IExecBatchTransaction,
 } from '@ProviderPattern/models/Actions/AbstractGenericActions';
+import { TokenMetadata } from './AbstractMainFTContractProviderAction';
+import { ISeedInfo, PoolDetails, PoolVolumes, IFarmData as IVaultData } from './AbstractMainFarmProviderAction';
+import { IPoolFiatPrice } from './AbstractMainProviderAPI';
+
+export type IPopulatedPoolExtraDataToken = { populated_tokens: Array<TokenMetadata>; shares_lptoken: any };
+export type IPopulatedPoolExtraDataVolume = { volumes: PoolVolumes };
+export type IPopulatedPool = PoolDetails & IPopulatedPoolExtraDataToken;
+export type IPopulatedSeed = ISeedInfo & {
+	shares_percent?: string | number | undefined;
+	shares_tvl?: string | number | undefined;
+	populated_farms: Array<IVaultData>;
+	pool_id: string | number;
+	pool: IPopulatedPool;
+	token_from: TokenMetadata;
+	token_to: TokenMetadata;
+	user_shares?: number | string | undefined;
+	user_shares_percent?: number | string | undefined;
+	user_shares_tvl?: number | string | undefined;
+	vault: {
+		shares?: number | string | undefined;
+		shares_tvl?: string | number | undefined;
+		shares_percent?: number | string | undefined;
+		user: {
+			shares?: number | string | undefined;
+			shares_tvl?: string | number | undefined;
+			shares_percent?: number | string | undefined;
+		};
+	};
+};
 
 export default class AbstractMainVaultProviderActions extends AbstractGenericActions {
 	protected declare devImplementation: any;
@@ -349,6 +378,204 @@ export default class AbstractMainVaultProviderActions extends AbstractGenericAct
 			methodName: 'storage_balance_of',
 			args: { account_id },
 		});
+	}
+
+	public async getVaults({ useFluxusVaultContractState = false }) {
+		this.devImplementation = false;
+		const vaultActions = ProviderPattern.getProviderInstance().getProviderActions().getVaultActions();
+		const getVaultStakedList = async ({ useFluxusFarmContract = true }) =>
+			vaultActions.getVaultStakedList({ useFluxusFarmContract });
+
+		const getStakedListByAccountId = async ({ useFluxusFarmContract = true }) =>
+			ProviderPattern.getInstance()
+				.getProvider()
+				.getProviderActions()
+				.getFarmActions()
+				.getStakedListByAccountId({ useFluxusFarmContract });
+
+		const getPopulatedVaults = async () => {
+			// get all user staked LP Tokens
+			const stakedLists = [
+				getStakedListByAccountId({ useFluxusFarmContract: useFluxusVaultContractState }),
+				getVaultStakedList({ useFluxusFarmContract: useFluxusVaultContractState }),
+			];
+			const [userStakedList, vaultStakedList] = await Promise.all(stakedLists);
+
+			// Object with key as farm_id and value as farm data
+			const farmsObject: Record<any, any> = {};
+			const farmsList = await ProviderPattern.getInstance()
+				.getProvider()
+				.getProviderActions()
+				.getFarmActions()
+				.listFarms({ page: 1, perPage: 100, useFluxusFarmContract: useFluxusVaultContractState });
+			// Array of all object farmData
+			farmsList.map((farm, index: number) => {
+				farmsObject[farm.farm_id] = farm;
+				return farm;
+			});
+			// Filter for just with pool seed
+			const seedsInfo = await ProviderPattern.getInstance()
+				.getProvider()
+				.getProviderActions()
+				.getFarmActions()
+				.getListSeedsInfo({ page: 1, limit: 100, useFluxusFarmContract: useFluxusVaultContractState });
+
+			const listSeeds = Object.values(seedsInfo).filter((seed, seedIndex: number) => {
+				const poolId = parseInt(seed.seed_id.split('@').splice(1, 1).join(''), 10);
+				if (Number.isNaN(poolId) || poolId < 1) {
+					return 0;
+				}
+				return 1;
+			});
+			// Array of IPopulatedSeed data object
+			// TODO: This should be moved to a context
+			const populatedSeeds: Array<IPopulatedSeed> = await Promise.all(
+				// TODO: async doesn't work within map functions
+				// see https://codezup.com/how-to-use-async-await-with-array-map-in-javascript/ good guide
+				listSeeds.map(async (seed, index: number) => {
+					const populateSeed = seed as IPopulatedSeed;
+					// getPopulatedFarms Promise
+					const getPopulatedFarms = () => {
+						const farms = seed.farms.map(async (farmID: string, index: number) => {
+							let farm = {} as IVaultData;
+							farm = farmsObject[farmID];
+							farm.token_details = await ProviderPattern.getInstance()
+								.getProvider()
+								.getProviderActions()
+								.getFTContractActions()
+								.ftGetTokenMetadata(farm.reward_token, false);
+							farm.user_reward = await ProviderPattern.getInstance()
+								.getProvider()
+								.getProviderActions()
+								.getFarmActions()
+								.getRewardByTokenId(farm.reward_token, undefined, useFluxusVaultContractState);
+							farm.user_unclaimed_reward = await ProviderPattern.getInstance()
+								.getProvider()
+								.getProviderActions()
+								.getFarmActions()
+								.getUnclaimedReward(farmID, undefined, useFluxusVaultContractState);
+							farmsObject[farmID] = farm;
+							return farm;
+						});
+						return farms;
+					};
+					populateSeed.populated_farms = await Promise.all(getPopulatedFarms());
+
+					// Pool ID from Seed ID by split @ at the second position
+					const getPoolIdFromSeedId = (seed_id: string) => {
+						const poolIDFromSeedID = seed_id.split('@').splice(1, 1).join('');
+						return parseInt(poolIDFromSeedID, 10);
+					};
+					const poolID = getPoolIdFromSeedId(populateSeed.seed_id);
+
+					// set the pool ID "12" at the populated seed object
+					populateSeed.pool_id = poolID;
+
+					// Set pool data from tvl price
+					const poolTvlFiatPrice = await ProviderPattern.getInstance()
+						.getProvider()
+						.getProviderActions()
+						.getAPIActions()
+						.getPoolTvlFiatPrice({ pool_id: poolID });
+					const populatedPool = { ...poolTvlFiatPrice } as IPoolFiatPrice &
+						IPopulatedPoolExtraDataToken &
+						IPopulatedPoolExtraDataVolume;
+
+					// Get populated tokens
+					const getPopulatedTokens = () => {
+						const populatedTokens = populatedPool.token_account_ids.map(async (token_id: string) =>
+							ProviderPattern.getInstance()
+								.getProvider()
+								.getProviderActions()
+								.getFTContractActions()
+								.ftGetTokenMetadata(token_id, false),
+						);
+						return populatedTokens;
+					};
+					populatedPool.populated_tokens = await Promise.all(getPopulatedTokens());
+					// Define the pool.
+					populateSeed.pool = populatedPool;
+
+					// Define seed shares info
+					const defineSeedSharesInfo = () => {
+						populateSeed.shares_percent = parseFloat(
+							`${Number(`${populateSeed.amount}`) / Number(`${populatedPool.shares_total_supply}`)}`,
+						).toFixed(24);
+						populateSeed.shares_tvl = parseFloat(
+							`${Number(`${populateSeed.shares_percent}`) * Number(`${populateSeed.pool.tvl}`)}`,
+						).toFixed(24);
+					};
+					defineSeedSharesInfo();
+
+					// Define user shares info
+					const defineUserSharesInfo = () => {
+						populateSeed.user_shares =
+							typeof userStakedList[populateSeed.seed_id] !== 'undefined'
+								? userStakedList[populateSeed.seed_id]
+								: undefined;
+						// User shares percent on top of farm
+						populateSeed.user_shares_percent = parseFloat(
+							`${Number(`${populateSeed.user_shares}`) / Number(`${populateSeed.amount}`)}`,
+						).toFixed(24);
+						// User shares tvl from they percent on top of farm shares tvl
+						populateSeed.user_shares_tvl = parseFloat(
+							`${Number(`${populateSeed.user_shares_percent}`) * Number(`${populateSeed.shares_tvl}`)}`,
+						).toFixed(24);
+					};
+					defineUserSharesInfo();
+
+					// Define vault shares info
+					const defineVaultSharesInfo = () => {
+						const vaultShares =
+							typeof vaultStakedList[populateSeed.seed_id] !== 'undefined'
+								? vaultStakedList[populateSeed.seed_id]
+								: undefined;
+						const vaultSharesPercent = parseFloat(
+							`${Number(`${vaultShares}`) / Number(`${populateSeed.amount}`)}`,
+						).toFixed(24);
+						const vaultSharesTvl = parseFloat(
+							`${Number(`${vaultSharesPercent}`) * Number(`${populateSeed.shares_tvl}`)}`,
+						).toFixed(24);
+						populateSeed.vault = {
+							shares: vaultShares,
+							shares_percent: vaultSharesPercent,
+							shares_tvl: vaultSharesTvl,
+							user: {
+								shares: '0',
+								shares_percent: '0',
+								shares_tvl: '0',
+							},
+						};
+					};
+					defineVaultSharesInfo();
+
+					// Define vault user shares info
+					const defineVaultUserSharesInfo = async () => {
+						if (!ProviderPattern.getInstance().getProvider().getWallet().isSignedIn()) {
+							return;
+						}
+						const vaultUserShares = await vaultActions.getUserShares({ seed_id: populateSeed.seed_id });
+						const vaultUserSharesPercent = parseFloat(
+							`${Number(`${vaultUserShares}`) / Number(`${populateSeed.vault.shares}`)}`,
+						).toFixed(24);
+						const vaultUserSharesTvl = parseFloat(
+							`${Number(`${vaultUserSharesPercent}`) * Number(`${populateSeed.vault.shares_tvl}`)}`,
+						).toFixed(24);
+						populateSeed.vault.user = {
+							shares: vaultUserShares,
+							shares_percent: vaultUserSharesPercent,
+							shares_tvl: vaultUserSharesTvl,
+						};
+					};
+
+					await defineVaultUserSharesInfo();
+
+					return populateSeed;
+				}),
+			);
+			return populatedSeeds;
+		};
+		return getPopulatedVaults();
 	}
 
 	/**

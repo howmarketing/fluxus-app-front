@@ -18,6 +18,9 @@
 			"@ProviderPattern/*": [
 				"./services/ProviderPattern/*"
 			],
+			"@ProviderPatternInterfaces/*": [
+				"./services/ProviderPattern/Interfaces_test/*"
+			],
 			"@workers/*": [
 				"./workers/*"
 			],

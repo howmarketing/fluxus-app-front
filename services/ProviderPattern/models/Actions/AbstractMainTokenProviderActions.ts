@@ -10,7 +10,7 @@ import {
 	executeMultipleTransactions,
 } from '@ProviderPattern/services/near';
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
-import { ACCOUNT_MIN_STORAGE_AMOUNT } from '@ProviderPattern/models/Actions/AbstractMainAccountProviderAction';
+import { ACCOUNT_MIN_STORAGE_AMOUNT } from '@ProviderPattern/models/Actions/AccountProviderAction';
 import { toNonDivisibleNumber } from '@utils/numbers';
 import {
 	MIN_DEPOSIT_PER_TOKEN,

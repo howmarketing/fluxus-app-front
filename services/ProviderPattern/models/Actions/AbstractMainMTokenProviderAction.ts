@@ -4,7 +4,7 @@ import { utils } from 'near-api-js';
 import { toNonDivisibleNumber } from '@utils/numbers';
 import { ONE_YOCTO_NEAR, Transaction, executeFarmMultipleTransactions } from '@ProviderPattern/services/near';
 import { TokenMetadata } from '@ProviderPattern/models/Actions/AbstractMainFTContractProviderAction';
-import { ACCOUNT_MIN_STORAGE_AMOUNT } from '@ProviderPattern/models/Actions/AbstractMainAccountProviderAction';
+import { ACCOUNT_MIN_STORAGE_AMOUNT } from '@ProviderPattern/models/Actions/AccountProviderAction';
 import {
 	MIN_DEPOSIT_PER_TOKEN,
 	storageDepositAction,

@@ -66,6 +66,7 @@ const Laboratorio: NextPage = function () {
 		const windowWalletProvider = await nearWalletAsWindow.getWindowWalletRPC<ProviderPattern>(true);
 		return windowWalletProvider.getProvider();
 	};
+
 	// Get vault actions from provider as window wallet
 	const getVaultActionsFromProviderAsWindow = async (
 		msTime?: number | undefined,
@@ -306,130 +307,12 @@ const Laboratorio: NextPage = function () {
 	 * LOAD VAULT AS VAULT LIST PAGE LOAD THEY DATA
 	 * @description Testing some ways to calculate the user experience with callback data as view interface
 	 */
-	const loadVaults = async ({ useFluxusVaultContractState = false }) => {
-		// get all user staked LP Tokens
-		const userStakedList = await ProviderPattern.getInstance()
+	const loadVaults = async ({ useFluxusVaultContractState = false }) =>
+		ProviderPattern.getInstance()
 			.getProvider()
 			.getProviderActions()
-			.getFarmActions()
-			.getStakedListByAccountId({ useFluxusFarmContract: useFluxusVaultContractState });
-		// Object with key as farm_id and value as farm data
-		const farmsObject: Record<any, any> = {};
-		const farmsList = await ProviderPattern.getInstance()
-			.getProvider()
-			.getProviderActions()
-			.getFarmActions()
-			.listFarms({ page: 1, perPage: 100, useFluxusFarmContract: useFluxusVaultContractState });
-		// Array of all object farmData
-		farmsList.map((farm, index: number) => {
-			farmsObject[farm.farm_id] = farm;
-			return farm;
-		});
-		// Filter for just with pool seed
-		const seedsInfo = await ProviderPattern.getInstance()
-			.getProvider()
-			.getProviderActions()
-			.getFarmActions()
-			.getListSeedsInfo({ page: 1, limit: 100, useFluxusFarmContract: useFluxusVaultContractState });
-		const listSeeds = Object.values(seedsInfo).filter((seed, seedIndex: number) => {
-			const poolId = parseInt(seed.seed_id.split('@').splice(1, 1).join(''), 10);
-			if (Number.isNaN(poolId) || poolId < 1) {
-				return 0;
-			}
-			return 1;
-		});
-		// Array of IPopulatedSeed data object
-		const populatedSeeds: Array<IPopulatedSeed> = await Promise.all(
-			listSeeds.map(async (seed, index: number) => {
-				const populateSeed = seed as IPopulatedSeed;
-				populateSeed.populated_farms = await Promise.all(
-					seed.farms.map(async (farmID: string, index: number) => {
-						let farm = {} as IVaultData;
-						farm = farmsObject[farmID];
-						farm.token_details = await ProviderPattern.getInstance()
-							.getProvider()
-							.getProviderActions()
-							.getFTContractActions()
-							.ftGetTokenMetadata(farm.reward_token, false);
-						farm.user_reward = await ProviderPattern.getInstance()
-							.getProvider()
-							.getProviderActions()
-							.getFarmActions()
-							.getRewardByTokenId(farm.reward_token, undefined, useFluxusVaultContractState);
-						farm.user_unclaimed_reward = await ProviderPattern.getInstance()
-							.getProvider()
-							.getProviderActions()
-							.getFarmActions()
-							.getUnclaimedReward(farmID, undefined, useFluxusVaultContractState);
-						farmsObject[farmID] = farm;
-						return farm;
-					}),
-				);
-				// Pool ID from Seed ID by split @ at the second position
-				const poolID = ((seed_id: string) => {
-					const poolIDFromSeedID = seed_id.split('@').splice(1, 1).join('');
-					return parseInt(poolIDFromSeedID, 10);
-				})(populateSeed.seed_id);
-				// set the pool ID "12" at the populated seed object
-				populateSeed.pool_id = poolID;
-				const poolTvlFiatPrice = await ProviderPattern.getInstance()
-					.getProvider()
-					.getProviderActions()
-					.getAPIActions()
-					.getPoolTvlFiatPrice({ pool_id: poolID });
-				const populatedPool = { ...poolTvlFiatPrice } as IPoolFiatPrice &
-					IPopulatedPoolExtraDataToken &
-					IPopulatedPoolExtraDataVolume;
-				populatedPool.populated_tokens = await Promise.all(
-					populatedPool.token_account_ids.map(async (token_id: string) =>
-						ProviderPattern.getInstance()
-							.getProvider()
-							.getProviderActions()
-							.getFTContractActions()
-							.ftGetTokenMetadata(token_id, false),
-					),
-				);
-				populatedPool.shares_lptoken = await ProviderPattern.getInstance()
-					.getProvider()
-					.getProviderActions()
-					.getPoolActions()
-					.getSharesInPool({ pool_id: poolID });
-				populateSeed.pool = populatedPool;
-				populateSeed.shares_percent = parseFloat(
-					`${Number(`${populateSeed.amount}`) / Number(`${populatedPool.shares_total_supply}`)}`,
-				).toFixed(24);
-				populateSeed.shares_tvl = parseFloat(
-					`${Number(`${populateSeed.shares_percent}`) * Number(`${populateSeed.pool.tvl}`)}`,
-				).toFixed(24);
-				populateSeed.token_from = await ProviderPattern.getInstance()
-					.getProvider()
-					.getProviderActions()
-					.getFTContractActions()
-					.ftGetTokenMetadata(populateSeed.pool.token_account_ids[0]);
-				populateSeed.token_to = await ProviderPattern.getInstance()
-					.getProvider()
-					.getProviderActions()
-					.getFTContractActions()
-					.ftGetTokenMetadata(populateSeed.pool.token_account_ids[1]);
-				populateSeed.user_shares =
-					typeof userStakedList[populateSeed.seed_id] !== 'undefined'
-						? userStakedList[populateSeed.seed_id]
-						: undefined;
-				populateSeed.user_shares_percent = parseFloat(
-					`${Number(`${populateSeed.user_shares}`) / Number(`${populateSeed.amount}`)}`,
-				).toFixed(24);
-				populateSeed.user_shares_tvl = parseFloat(
-					`${Number(`${populateSeed.user_shares_percent}`) * Number(`${populateSeed.shares_tvl}`)}`,
-				).toFixed(24);
-				return populateSeed;
-			}),
-		);
-		// All rewards available from farm contract
-		setTimeout(() => {
-			setVaultsState(populatedSeeds);
-		}, 200);
-		return populatedSeeds;
-	};
+			.getVaultActions()
+			.getVaults({ useFluxusVaultContractState: true });
 
 	// Get account deposits from farm contract
 	const getRefFarmUsersDeposits = async ({ account_id = undefined, contract_id = undefined, debug = false }) => {
@@ -869,7 +752,7 @@ console.log("${displayFunctionAccessName}_response: ", ${displayFunctionAccessNa
 		Object.assign(new Array(qt).fill(1), []).map((itemA, index) => Number(itemA) + Number(index));
 
 	const listSeeds = async ({ page = 1, perPage = 100, useFluxusFarmContract = false }) => {
-		await makeWait(15000);
+		await makeWait(100);
 		return ProviderPattern.getInstance().getProvider().getProviderActions().getFarmActions().listFarms({
 			page,
 			perPage,

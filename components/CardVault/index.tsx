@@ -107,7 +107,7 @@ export const CardVault = (props: ICardVaultProps): ReactElement => {
 					{/* <DisplayerVaultDropDownButton /> */}
 				</CardContainerStyled>
 			</CardHeader>
-			<CardBody data-kleyname="CardBodyArea" title="Card body area">
+			<CardBody data-keyname="CardBodyArea" title="Card body area">
 				<CardContainerStyled data-componentname="CardContainerStyled" title="Card Container">
 					<TabsHeader populatedSeed={populatedSeed} activedTabIndex={tabActivedState} />
 					<CardBodyTabsContent data-componentname="CardBodyTabsContent" title="Card body tabs content area">

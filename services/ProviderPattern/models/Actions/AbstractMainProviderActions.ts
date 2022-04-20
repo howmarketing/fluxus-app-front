@@ -1,5 +1,5 @@
 import MainProviderActionsInterface from '@ProviderPattern/Interfaces/MainProviderActionsInterface';
-import AbstractMainAccountProviderAction from '@ProviderPattern/models/Actions/AbstractMainAccountProviderAction';
+import AccountProviderAction from '@ProviderPattern/models/Actions/AccountProviderAction';
 import AbstractMainProvider from '@ProviderPattern/models/AbstractMainProvider';
 import AbstractMainMTokenProviderAction from '@ProviderPattern/models/Actions/AbstractMainMTokenProviderAction';
 import AbstractMainTokenProviderActions from '@ProviderPattern/models/Actions/AbstractMainTokenProviderActions';
@@ -18,7 +18,7 @@ import AbstractMainTransactionProviderAction from '@ProviderPattern/models/Actio
  * 		-	AbstractMainProvider
  * 		-	AbstractMainProviderAPI
  * 		-	AbstractMainIndexerProviderAction
- * 		-	AbstractMainAccountProviderAction
+ * 		-	AccountProviderAction
  * 		-	AbstractMainFTContractProviderAction
  * 		-	AbstractMainFarmProviderAction
  * 		-	AbstractMainMTokenProviderAction
@@ -37,7 +37,7 @@ export default class AbstractMainProviderActions implements MainProviderActionsI
 
 	private declare _IndexerActionsInstance: AbstractMainIndexerProviderAction;
 
-	private declare _AccountActionsInstance: AbstractMainAccountProviderAction;
+	private declare _AccountActionsInstance: AccountProviderAction;
 
 	private declare _FTContractActionsInstance: AbstractMainFTContractProviderAction;
 
@@ -76,7 +76,7 @@ export default class AbstractMainProviderActions implements MainProviderActionsI
 		this._ProviderProtocolInstance = providerProtocolInstance;
 		this._APIActionsInstance = AbstractMainProviderAPI.getInstance(this);
 		this._IndexerActionsInstance = AbstractMainIndexerProviderAction.getInstance(this);
-		this._AccountActionsInstance = AbstractMainAccountProviderAction.getInstance(this);
+		this._AccountActionsInstance = AccountProviderAction.getInstance(this);
 		this._FTContractActionsInstance = AbstractMainFTContractProviderAction.getInstance(this);
 		this._FarmActionsInstance = AbstractMainFarmProviderAction.getInstance(this);
 		this._MTokenActionsInstance = AbstractMainMTokenProviderAction.getInstance(this);
@@ -113,7 +113,7 @@ export default class AbstractMainProviderActions implements MainProviderActionsI
 	/**
 	 * GET THE ACTIONS FOR ACCOUNT AS CLASS INSTANCE
 	 */
-	public getAccountActions(): AbstractMainAccountProviderAction {
+	public getAccountActions(): AccountProviderAction {
 		return this._AccountActionsInstance;
 	}
 
